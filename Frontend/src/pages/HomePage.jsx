@@ -1,5 +1,7 @@
 import { Sidebar } from '../components/layout/Sidebar'
 import { Card } from '../components/ui/Card'
+import { useEffect, useState } from 'react'
+import { getCurrentUser } from '../features/auth/authService'
 
 const hours = [6, 8, 7, 8.5, 6.5, 0, 0]
 const weekDays = ['L', 'M', 'M', 'J', 'V', 'S', 'D']
@@ -15,13 +17,45 @@ function Status({ children }) {
 }
 
 export function HomePage() {
+
+  const [user, setUser] = useState(null)
+
+  useEffect(() => {
+    async function loadUser() {
+      try {
+        const currentUser = await getCurrentUser()
+        setUser(currentUser)
+      } catch (error) {
+        console.error('No se pudo obtener el usuario:', error)
+      }
+    }
+
+    loadUser()
+  }, [])
+
+  const initials = user?.name
+    ? user.name
+        .split(' ')
+        .map((word) => word[0])
+        .join('')
+        .slice(0, 2)
+        .toUpperCase()
+    : '--'
+
   return (
     <main className="min-h-screen bg-slate-100 text-slate-900 lg:flex">
       <Sidebar />
       <div className="min-w-0 flex-1">
         <header className="flex items-center justify-between border-b border-slate-200 bg-white px-5 py-4 sm:px-8">
-          <div><p className="text-xs font-semibold uppercase tracking-wider text-emerald-600">Mi panel</p><h1 className="text-xl font-bold">¡Buen día, Francisco!</h1></div>
-          <div className="flex items-center gap-3"><button className="relative grid size-10 place-items-center rounded-full bg-slate-100 text-lg" aria-label="Notificaciones">♢<span className="absolute right-2 top-2 size-2 rounded-full bg-red-500" /></button><div className="hidden text-right sm:block"><p className="text-sm font-semibold">Francisco Díaz</p><p className="text-xs text-slate-500">Empleado</p></div><span className="grid size-10 place-items-center rounded-full bg-[#d8eadf] font-bold text-emerald-800">FD</span></div>
+          <div><p className="text-xs font-semibold uppercase tracking-wider text-emerald-600">Mi panel</p><h1 className="text-xl font-bold">
+              ¡Buen día, {user?.name?.split(' ')[0] ?? ''}!
+            </h1></div>
+          <div className="flex items-center gap-3"><button className="relative grid size-10 place-items-center rounded-full bg-slate-100 text-lg" aria-label="Notificaciones">♢<span className="absolute right-2 top-2 size-2 rounded-full bg-red-500" /></button><div className="hidden text-right sm:block"><p className="text-sm font-semibold">
+            {user?.name ?? 'Cargando...'}
+          </p>
+          <p className="text-xs text-slate-500">
+            {user?.role ?? ''}
+          </p></div><span className="grid size-10 place-items-center rounded-full bg-[#d8eadf] font-bold text-emerald-800">{initials}</span></div>
         </header>
 
         <div className="mx-auto max-w-7xl p-5 sm:p-8">
