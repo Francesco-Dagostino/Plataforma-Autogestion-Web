@@ -1,7 +1,7 @@
 import { Link, NavLink, useNavigate } from 'react-router-dom'
 import { clearSession } from '../../features/auth/authStorage'
 
-const navigation = [
+const employeeNavigation = [
   { label: 'Inicio', icon: 'home', path: '/inicio' },
   { label: 'Mis horas', icon: 'clock', path: '/mis-horas' },
   { label: 'Liquidaciones', icon: 'receipt', path: '/mis-liquidaciones' },
@@ -45,7 +45,11 @@ function Icon({ name }) {
   )
 }
 
-export function Sidebar() {
+export function Sidebar({
+  navigation = employeeNavigation,
+  homePath = '/inicio',
+  subtitle = 'Portal de empleados',
+}) {
   const navigate = useNavigate()
 
   function handleLogout() {
@@ -54,15 +58,15 @@ export function Sidebar() {
   }
 
   return (
-    <aside className="flex w-full shrink-0 flex-row bg-[#102848] px-4 py-3 text-slate-300 lg:min-h-screen lg:w-60 lg:flex-col lg:px-5 lg:py-7">
-      <Link to="/inicio" className="mr-auto flex items-center gap-3 lg:mb-12">
+    <aside className="flex w-full shrink-0 flex-row flex-wrap items-center gap-3 bg-[#102848] px-4 py-3 text-slate-300 lg:min-h-screen lg:w-60 lg:flex-col lg:items-stretch lg:px-5 lg:py-7">
+      <Link to={homePath} className="mr-auto flex items-center gap-3 lg:mb-12">
         <div className="grid size-10 place-items-center rounded-xl bg-emerald-400 text-xl font-black text-[#102848]">
           A
         </div>
 
         <div>
           <p className="font-bold tracking-wide text-white">AUTOGESTIÓN</p>
-          <p className="text-xs text-slate-400">Portal de empleados</p>
+          <p className="text-xs text-slate-400">{subtitle}</p>
         </div>
       </Link>
 
@@ -70,6 +74,7 @@ export function Sidebar() {
         {navigation.map((item) => (
           <NavLink
             key={item.label}
+            end={item.path === homePath}
             to={item.path}
             className={({ isActive }) =>
               `flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition ${
@@ -91,10 +96,10 @@ export function Sidebar() {
       <div className="ml-auto flex items-center gap-2 lg:mt-auto lg:ml-0 lg:flex-col lg:items-stretch">
         <Link
           to="/perfil"
-          className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium hover:bg-white/10 hover:text-white"
+          className="flex items-center gap-3 rounded-xl border border-white/10 px-3 py-2.5 text-sm font-medium transition hover:bg-white/10 hover:text-white"
         >
           <span className="grid size-7 place-items-center rounded-full bg-slate-500 text-xs font-bold text-white">
-            FD
+            MI
           </span>
           <span className="hidden sm:inline">Mi perfil</span>
         </Link>
@@ -102,9 +107,9 @@ export function Sidebar() {
         <button
           type="button"
           onClick={handleLogout}
-          className="rounded-xl px-3 py-2.5 text-left text-sm font-medium hover:bg-white/10 hover:text-white"
+          className="rounded-xl border border-white/20 px-3 py-2.5 text-left text-sm font-medium text-slate-200 transition hover:border-red-300/50 hover:bg-red-400/10 hover:text-white focus:outline-none focus:ring-2 focus:ring-emerald-300"
         >
-          Cerrar sesión
+          <span aria-hidden="true" className="mr-2">↪</span>Cerrar sesión
         </button>
       </div>
     </aside>
