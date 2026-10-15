@@ -112,7 +112,7 @@ export function SuperAdminPage() {
       <div className="mx-auto max-w-7xl">
         <header className="mb-7 flex flex-wrap items-center justify-between gap-4">
           <div><p className="text-xs font-semibold uppercase tracking-wider text-emerald-600">SuperAdmin</p><h1 className="mt-1 text-2xl font-bold">Administración global</h1><p className="mt-1 text-slate-500">Gestioná las empresas registradas en la plataforma.</p></div>
-          <div className="flex gap-2"><button onClick={loadCompanies} disabled={loading} className="rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50">↻ Actualizar</button><button onClick={openCreate} className="rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700">+ Nueva empresa</button></div>
+          <div className="flex gap-2"><button onClick={loadCompanies} disabled={loading} className="rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50">↻ {loading ? 'Actualizando...' : 'Actualizar'}</button><button onClick={openCreate} className="rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700">+ Nueva empresa</button></div>
         </header>
 
         {error && !isFormOpen && <p role="alert" className="mb-4 rounded-xl bg-red-50 p-3 text-sm text-red-700">{error}</p>}

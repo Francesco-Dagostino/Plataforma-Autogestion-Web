@@ -1,4 +1,5 @@
 import { apiClient } from '../../services/apiClient'
+import { getWorkdayDateString } from './workdayDate'
 
 // Obtiene las jornadas del empleado autenticado
 export function getMyWorkdays() {
@@ -11,7 +12,9 @@ export function createWorkday({ hoursWorked, dateEntry }) {
     method: 'POST',
     body: JSON.stringify({
       hoursWorked: Number(hoursWorked),
-      dateEntry: new Date(dateEntry).toISOString(),
+      // Las jornadas son fechas de calendario: convertimos la medianoche
+      // argentina a UTC para conservar el día elegido al guardarlo.
+      dateEntry: new Date(`${getWorkdayDateString(dateEntry)}T00:00:00-03:00`).toISOString(),
     }),
   })
 }

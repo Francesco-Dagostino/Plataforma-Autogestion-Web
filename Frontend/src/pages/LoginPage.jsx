@@ -8,6 +8,7 @@ export function LoginPage() {
   const [form, setForm] = useState({ userName: '', password: '' })
   const [error, setError] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
 
   function handleChange(event) {
     const { name, value } = event.target
@@ -56,7 +57,12 @@ export function LoginPage() {
 
           <div>
             <label className="mb-1.5 block text-sm font-semibold text-slate-700" htmlFor="password">Contraseña</label>
-            <input id="password" name="password" type="password" value={form.password} onChange={handleChange} autoComplete="current-password" className="w-full rounded-xl border border-slate-300 px-3 py-2.5 outline-none transition focus:border-emerald-600 focus:ring-2 focus:ring-emerald-100" placeholder="Tu contraseña" disabled={isSubmitting} />
+            <div className="relative">
+              <input id="password" name="password" type={showPassword ? 'text' : 'password'} value={form.password} onChange={handleChange} autoComplete="current-password" className="w-full rounded-xl border border-slate-300 px-3 py-2.5 pr-20 outline-none transition focus:border-emerald-600 focus:ring-2 focus:ring-emerald-100" placeholder="Tu contraseña" disabled={isSubmitting} />
+              <button type="button" onClick={() => setShowPassword((visible) => !visible)} aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'} aria-pressed={showPassword} className="absolute inset-y-0 right-3 text-sm font-semibold text-emerald-700 hover:text-emerald-800 focus:outline-none focus-visible:underline focus-visible:underline-offset-4">
+                {showPassword ? 'Ocultar' : 'Mostrar'}
+              </button>
+            </div>
           </div>
 
           {error && <p className="rounded-xl bg-red-50 px-3 py-2.5 text-sm text-red-700" role="alert">{error}</p>}

@@ -52,7 +52,7 @@ export function MyLiquidationsPage() {
       <div className="min-w-0 flex-1">
         <header className="flex items-center justify-between border-b border-slate-200 bg-white px-5 py-4 sm:px-8">
           <div><p className="text-xs font-semibold uppercase tracking-wider text-emerald-600">Liquidaciones</p><h1 className="text-xl font-bold">Mis liquidaciones</h1></div>
-          <button onClick={loadLiquidations} disabled={loading} className="rounded-xl border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:opacity-50">↻ Actualizar</button>
+          <button onClick={loadLiquidations} disabled={loading} className="rounded-xl border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:opacity-50">↻ {loading ? 'Actualizando...' : 'Actualizar'}</button>
         </header>
 
         <div className="mx-auto max-w-7xl p-5 sm:p-8">

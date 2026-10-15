@@ -3,6 +3,7 @@ import { Sidebar } from '../components/layout/Sidebar'
 import { Card } from '../components/ui/Card'
 import { getCurrentUser } from '../features/auth/authService'
 import { createWorkday, getMyWorkdays } from '../features/workdays/workdayService'
+import { formatWorkdayDate, getArgentinaToday, getWorkdayDate } from '../features/workdays/workdayDate'
 
 const weekDays = ['L', 'M', 'M', 'J', 'V', 'S', 'D']
 const statusStyles = {
@@ -12,35 +13,35 @@ const statusStyles = {
 }
 
 function formatDate(value) {
-  return new Date(value).toLocaleDateString('es-AR', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })
+  return formatWorkdayDate(value, { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })
 }
 
 function getWeekRange(date = new Date()) {
   const monday = new Date(date)
-  const offset = monday.getDay() === 0 ? -6 : 1 - monday.getDay()
-  monday.setDate(monday.getDate() + offset)
-  monday.setHours(0, 0, 0, 0)
+  const offset = monday.getUTCDay() === 0 ? -6 : 1 - monday.getUTCDay()
+  monday.setUTCDate(monday.getUTCDate() + offset)
+  monday.setUTCHours(0, 0, 0, 0)
   const sunday = new Date(monday)
-  sunday.setDate(monday.getDate() + 7)
+  sunday.setUTCDate(monday.getUTCDate() + 7)
   return { monday, sunday }
 }
 
 function WorkdayChart({ workdays }) {
   const [period, setPeriod] = useState('week')
-  const today = new Date()
+  const today = getWorkdayDate(getArgentinaToday())
   const { monday, sunday } = getWeekRange(today)
   const weekly = Array.from({ length: 7 }, (_, index) => ({ label: weekDays[index], approved: 0, pending: 0 }))
 
   workdays.forEach((workday) => {
     if (workday.estado !== 'Aprobada' && workday.estado !== 'Pendiente') return
-    const date = new Date(workday.dateEntry)
+    const date = getWorkdayDate(workday.dateEntry)
     if (date < monday || date >= sunday) return
-    const index = (date.getDay() + 6) % 7
+    const index = (date.getUTCDay() + 6) % 7
     const status = workday.estado === 'Aprobada' ? 'approved' : 'pending'
     weekly[index][status] += Number(workday.hoursWorked ?? 0)
   })
 
-  const daysInMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate()
+  const daysInMonth = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth() + 1, 0)).getUTCDate()
   const monthly = Array.from({ length: Math.ceil(daysInMonth / 7) }, (_, index) => ({
     label: `${index * 7 + 1}–${Math.min((index + 1) * 7, daysInMonth)}`,
     approved: 0,
@@ -49,9 +50,9 @@ function WorkdayChart({ workdays }) {
 
   workdays.forEach((workday) => {
     if (workday.estado !== 'Aprobada' && workday.estado !== 'Pendiente') return
-    const date = new Date(workday.dateEntry)
-    if (date.getFullYear() !== today.getFullYear() || date.getMonth() !== today.getMonth()) return
-    const index = Math.floor((date.getDate() - 1) / 7)
+    const date = getWorkdayDate(workday.dateEntry)
+    if (date.getUTCFullYear() !== today.getUTCFullYear() || date.getUTCMonth() !== today.getUTCMonth()) return
+    const index = Math.floor((date.getUTCDate() - 1) / 7)
     const status = workday.estado === 'Aprobada' ? 'approved' : 'pending'
     monthly[index][status] += Number(workday.hoursWorked ?? 0)
   })
@@ -100,7 +101,7 @@ export function MyWorkdaysPage() {
   const [user, setUser] = useState(null)
   const [workdays, setWorkdays] = useState([])
   const [isModalOpen, setIsModalOpen] = useState(false)
-  const [formData, setFormData] = useState({ hoursWorked: 8, dateEntry: new Date().toISOString().split('T')[0] })
+  const [formData, setFormData] = useState({ hoursWorked: 8, dateEntry: getArgentinaToday() })
   const [submitting, setSubmitting] = useState(false)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -108,6 +109,7 @@ export function MyWorkdaysPage() {
 
   const loadData = useCallback(async () => {
     setError('')
+    setLoading(true)
     try {
       const [currentUser, myWorkdays] = await Promise.all([getCurrentUser(), getMyWorkdays()])
       setUser(currentUser)
@@ -129,7 +131,7 @@ export function MyWorkdaysPage() {
     try {
       await createWorkday(formData)
       setIsModalOpen(false)
-      setFormData({ hoursWorked: 8, dateEntry: new Date().toISOString().split('T')[0] })
+      setFormData({ hoursWorked: 8, dateEntry: getArgentinaToday() })
       setNotice('Jornada registrada y enviada para aprobación.')
       await loadData()
     } catch (submitError) {
@@ -152,7 +154,7 @@ export function MyWorkdaysPage() {
           <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
             <div><h2 className="text-2xl font-bold">Horas registradas</h2><p className="mt-1 text-slate-500">Consultá tu actividad y el estado de cada jornada.</p></div>
             <div className="flex gap-2">
-              <button onClick={loadData} className="rounded-xl border border-slate-300 px-4 py-3 text-sm font-medium text-slate-700 hover:bg-white">↻ Actualizar</button>
+              <button onClick={loadData} disabled={loading} className="rounded-xl border border-slate-300 px-4 py-3 text-sm font-medium text-slate-700 hover:bg-white disabled:opacity-50">↻ {loading ? 'Actualizando...' : 'Actualizar'}</button>
               <button onClick={() => { setError(''); setNotice(''); setIsModalOpen(true) }} className="rounded-xl bg-emerald-600 px-5 py-3 text-sm font-semibold text-white shadow-sm hover:bg-emerald-700">+ Registrar horas</button>
             </div>
           </div>

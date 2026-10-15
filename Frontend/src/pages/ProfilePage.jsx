@@ -1,8 +1,20 @@
 import { useEffect, useState } from 'react'
 import { Sidebar } from '../components/layout/Sidebar'
 import { getCurrentUser } from '../features/auth/authService'
+import { getUserRole } from '../features/auth/authStorage'
+
+const superAdminNavigation = [{ label: 'Empresas', icon: 'home', path: '/super-admin' }]
+const adminNavigation = [
+  { label: 'Aprobaciones', icon: 'home', path: '/admin' },
+  { label: 'Registrar mis horas', icon: 'clock', path: '/admin/registrar-horas' },
+  { label: 'Empleados', icon: 'clock', path: '/admin/empleados' },
+  { label: 'Liquidaciones', icon: 'receipt', path: '/admin/liquidaciones' },
+]
 
 export function ProfilePage() {
+  const role = getUserRole()
+  const isSuperAdmin = role === 'SuperAdmin'
+  const isAdmin = role === 'Admin'
   const [user, setUser] = useState(null)
   const [error, setError] = useState('')
 
@@ -34,7 +46,11 @@ export function ProfilePage() {
 
   return (
     <main className="min-h-screen bg-slate-100 lg:flex">
-      <Sidebar />
+      <Sidebar
+        navigation={isSuperAdmin ? superAdminNavigation : isAdmin ? adminNavigation : undefined}
+        homePath={isSuperAdmin ? '/super-admin' : isAdmin ? '/admin' : undefined}
+        subtitle={isSuperAdmin ? 'Administración global' : isAdmin ? 'Panel de administración' : undefined}
+      />
 
       <section className="flex-1 p-5 sm:p-8">
         <div className="mx-auto max-w-3xl">

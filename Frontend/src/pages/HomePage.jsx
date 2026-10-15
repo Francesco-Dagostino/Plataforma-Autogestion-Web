@@ -4,19 +4,17 @@ import { Sidebar } from '../components/layout/Sidebar'
 import { Card } from '../components/ui/Card'
 import { getCurrentUser } from '../features/auth/authService'
 import { getMyWorkdays } from '../features/workdays/workdayService'
+import { getArgentinaToday, getWorkdayDateString } from '../features/workdays/workdayDate'
 
 function isToday(value) {
-  const date = new Date(value)
-  const today = new Date()
-  return date.getFullYear() === today.getFullYear() && date.getMonth() === today.getMonth() && date.getDate() === today.getDate()
+  return getWorkdayDateString(value) === getArgentinaToday()
 }
 
-function getWeekStart(date = new Date()) {
-  const start = new Date(date)
-  const offset = start.getDay() === 0 ? -6 : 1 - start.getDay()
-  start.setDate(start.getDate() + offset)
-  start.setHours(0, 0, 0, 0)
-  return start
+function getWeekStart(date = getArgentinaToday()) {
+  const start = new Date(`${date}T00:00:00Z`)
+  const offset = start.getUTCDay() === 0 ? -6 : 1 - start.getUTCDay()
+  start.setUTCDate(start.getUTCDate() + offset)
+  return start.toISOString().slice(0, 10)
 }
 
 export function HomePage() {
@@ -37,11 +35,14 @@ export function HomePage() {
     .filter((item) => isToday(item.dateEntry) && item.estado !== 'Desaprobada')
     .reduce((total, item) => total + Number(item.hoursWorked ?? 0), 0)
   const weekStart = getWeekStart()
+  const weekEnd = new Date(`${weekStart}T00:00:00Z`)
+  weekEnd.setUTCDate(weekEnd.getUTCDate() + 7)
+  const weekEndString = weekEnd.toISOString().slice(0, 10)
   const weekHours = workdays
     .filter((item) => {
       if (item.estado === 'Desaprobada') return false
-      const date = new Date(item.dateEntry)
-      return date >= weekStart && date < new Date(weekStart.getTime() + 7 * 24 * 60 * 60 * 1000)
+      const date = getWorkdayDateString(item.dateEntry)
+      return date >= weekStart && date < weekEndString
     })
     .reduce((total, item) => total + Number(item.hoursWorked ?? 0), 0)
   const pendingCount = workdays.filter((item) => item.estado === 'Pendiente').length

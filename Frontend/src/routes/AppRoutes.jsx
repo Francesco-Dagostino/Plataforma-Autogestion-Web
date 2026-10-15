@@ -17,6 +17,7 @@ export function AppRoutes() {
       <Route path="/mis-horas" element={<ProtectedRoute allowedRoles={['Empleado']}><MyWorkdaysPage /></ProtectedRoute>} />
       <Route path="/mis-liquidaciones" element={<ProtectedRoute allowedRoles={['Empleado']}><MyLiquidationsPage /></ProtectedRoute>} />
       <Route path="/admin" element={<ProtectedRoute allowedRoles={['Admin']}><AdminDashboardPage /></ProtectedRoute>} />
+      <Route path="/admin/registrar-horas" element={<ProtectedRoute allowedRoles={['Admin']}><AdminDashboardPage section="registrarHoras" /></ProtectedRoute>} />
       <Route path="/admin/empleados" element={<ProtectedRoute allowedRoles={['Admin']}><AdminDashboardPage section="empleados" /></ProtectedRoute>} />
       <Route path="/admin/liquidaciones" element={<ProtectedRoute allowedRoles={['Admin']}><AdminDashboardPage section="liquidaciones" /></ProtectedRoute>} />
       <Route path="/super-admin" element={<ProtectedRoute allowedRoles={['SuperAdmin']}><SuperAdminPage /></ProtectedRoute>} />
