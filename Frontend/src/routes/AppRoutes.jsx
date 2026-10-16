@@ -9,10 +9,15 @@ import { ProfilePage } from '../pages/ProfilePage'
 import { MyWorkdaysPage } from '../pages/MyWorkdaysPage'
 import { MyLiquidationsPage } from '../pages/MyLiquidationsPage'
 
+import { ForgotPasswordPage } from '../pages/ForgotPasswordPage'
+import { ResetPasswordPage } from '../pages/ResetPasswordPage'
+
 export function AppRoutes() {
   return (
     <Routes>
       <Route path="/login" element={<PublicRoute><LoginPage /></PublicRoute>} />
+      <Route path="/forgot-password" element={<PublicRoute><ForgotPasswordPage /></PublicRoute>} />
+      <Route path="/reset-password" element={<PublicRoute><ResetPasswordPage /></PublicRoute>} />
       <Route path="/inicio" element={<ProtectedRoute allowedRoles={['Empleado']}><HomePage /></ProtectedRoute>} />
       <Route path="/mis-horas" element={<ProtectedRoute allowedRoles={['Empleado']}><MyWorkdaysPage /></ProtectedRoute>} />
       <Route path="/mis-liquidaciones" element={<ProtectedRoute allowedRoles={['Empleado']}><MyLiquidationsPage /></ProtectedRoute>} />
