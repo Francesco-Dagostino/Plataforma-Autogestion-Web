@@ -25,3 +25,19 @@ export async function login({ userName, password }) {
 export function getCurrentUser() {
   return apiClient('/User/me')
 }
+
+// Envía solicitud para recuperar contraseña
+export async function forgotPassword(email) {
+  return apiClient('/Auth/forgot-password', {
+    method: 'POST',
+    body: JSON.stringify({ email }),
+  })
+}
+
+// Restablece la contraseña con token y nueva clave
+export async function resetPassword(email, token, newPassword) {
+  return apiClient('/Auth/reset-password', {
+    method: 'POST',
+    body: JSON.stringify({ email, token, newPassword }),
+  })
+}

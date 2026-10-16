@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 import { login } from '../features/auth/authService'
 import { getHomePathForRole } from '../features/auth/authStorage'
 
@@ -56,7 +56,12 @@ export function LoginPage() {
           </div>
 
           <div>
-            <label className="mb-1.5 block text-sm font-semibold text-slate-700" htmlFor="password">Contraseña</label>
+            <div className="mb-1.5 flex items-center justify-between">
+              <label className="block text-sm font-semibold text-slate-700" htmlFor="password">Contraseña</label>
+              <Link to="/forgot-password" className="text-xs font-semibold text-emerald-700 hover:text-emerald-800 hover:underline">
+                ¿Olvidaste tu contraseña?
+              </Link>
+            </div>
             <div className="relative">
               <input id="password" name="password" type={showPassword ? 'text' : 'password'} value={form.password} onChange={handleChange} autoComplete="current-password" className="w-full rounded-xl border border-slate-300 px-3 py-2.5 pr-20 outline-none transition focus:border-emerald-600 focus:ring-2 focus:ring-emerald-100" placeholder="Tu contraseña" disabled={isSubmitting} />
               <button type="button" onClick={() => setShowPassword((visible) => !visible)} aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'} aria-pressed={showPassword} className="absolute inset-y-0 right-3 text-sm font-semibold text-emerald-700 hover:text-emerald-800 focus:outline-none focus-visible:underline focus-visible:underline-offset-4">
