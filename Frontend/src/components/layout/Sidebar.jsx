@@ -5,7 +5,6 @@ const employeeNavigation = [
   { label: 'Inicio', icon: 'home', path: '/inicio' },
   { label: 'Mis horas', icon: 'clock', path: '/mis-horas' },
   { label: 'Liquidaciones', icon: 'receipt', path: '/mis-liquidaciones' },
-  { label: 'Reportes', icon: 'chart', path: '/reportes' },
 ]
 
 function Icon({ name }) {
@@ -23,11 +22,6 @@ function Icon({ name }) {
       <>
         <path d="M6 3h12v18l-3-2-3 2-3-2-3 2V3Z" />
         <path d="M9 8h6M9 12h6" />
-      </>
-    ),
-    chart: (
-      <>
-        <path d="M4 20V10M10 20V4M16 20v-7M22 20H2" />
       </>
     ),
   }

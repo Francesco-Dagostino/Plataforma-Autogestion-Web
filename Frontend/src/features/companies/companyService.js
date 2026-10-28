@@ -15,3 +15,11 @@ export function updateCompany(id, company) {
 export function deleteCompany(id) {
   return apiClient(`/Company/${id}`, { method: 'DELETE' })
 }
+
+export function createCompanyAdmin(companyId, admin) {
+  return apiClient('/User', { method: 'POST', body: JSON.stringify({ ...admin, role: 'Admin', idCompany: companyId }) })
+}
+
+export function getCompanyUsers(companyId) {
+  return apiClient(`/User/company/${companyId}`)
+}

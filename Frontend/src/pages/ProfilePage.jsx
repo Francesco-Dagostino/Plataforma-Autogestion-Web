@@ -1,14 +1,15 @@
 import { useEffect, useState } from 'react'
 import { Sidebar } from '../components/layout/Sidebar'
+import { useToast } from '../context/ToastContext'
 import { getCurrentUser } from '../features/auth/authService'
 import { getUserRole } from '../features/auth/authStorage'
 
 const superAdminNavigation = [{ label: 'Empresas', icon: 'home', path: '/super-admin' }]
 const adminNavigation = [
   { label: 'Aprobaciones', icon: 'home', path: '/admin' },
-  { label: 'Registrar mis horas', icon: 'clock', path: '/admin/registrar-horas' },
   { label: 'Empleados', icon: 'clock', path: '/admin/empleados' },
   { label: 'Liquidaciones', icon: 'receipt', path: '/admin/liquidaciones' },
+  { label: 'Mi empresa', icon: 'home', path: '/admin/mi-empresa' },
 ]
 
 export function ProfilePage() {
@@ -16,7 +17,8 @@ export function ProfilePage() {
   const isSuperAdmin = role === 'SuperAdmin'
   const isAdmin = role === 'Admin'
   const [user, setUser] = useState(null)
-  const [error, setError] = useState('')
+  const { toast } = useToast()
+  const [error, setError] = useState(false)
 
   useEffect(() => {
     async function loadUser() {
@@ -24,12 +26,13 @@ export function ProfilePage() {
         const currentUser = await getCurrentUser()
         setUser(currentUser)
       } catch (requestError) {
-        setError(requestError.message)
+        setError(true)
+        toast.error(requestError.message)
       }
     }
 
     loadUser()
-  }, [])
+  }, [toast])
 
   const initials = user?.name
     ? user.name
@@ -65,12 +68,6 @@ export function ProfilePage() {
               Consultá los datos de tu cuenta.
             </p>
           </div>
-
-          {error && (
-            <p className="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">
-              {error}
-            </p>
-          )}
 
           {!user && !error && (
             <p className="text-slate-500">Cargando datos...</p>

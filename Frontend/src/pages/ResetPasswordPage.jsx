@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { resetPassword } from '../features/auth/authService'
+import { useToast } from '../context/ToastContext'
 
 export function ResetPasswordPage() {
   const [searchParams] = useSearchParams()
@@ -10,7 +11,7 @@ export function ResetPasswordPage() {
   const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
-  const [error, setError] = useState('')
+  const { toast } = useToast()
   const [success, setSuccess] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
@@ -18,15 +19,13 @@ export function ResetPasswordPage() {
 
   async function handleSubmit(event) {
     event.preventDefault()
-    setError('')
-
     if (newPassword.length < 6) {
-      setError('La contraseña debe tener al menos 6 caracteres.')
+      toast.error('La contraseña debe tener al menos 6 caracteres.')
       return
     }
 
     if (newPassword !== confirmPassword) {
-      setError('Las contraseñas no coinciden.')
+      toast.error('Las contraseñas no coinciden.')
       return
     }
 
@@ -35,7 +34,7 @@ export function ResetPasswordPage() {
       await resetPassword(email, token, newPassword)
       setSuccess(true)
     } catch (requestError) {
-      setError(requestError.message || 'El enlace es inválido o ha expirado.')
+      toast.error(requestError.message || 'El enlace es inválido o ha expirado.')
     } finally {
       setIsSubmitting(false)
     }
@@ -128,7 +127,6 @@ export function ResetPasswordPage() {
               />
             </div>
 
-            {error && <p className="rounded-xl bg-red-50 px-3 py-2.5 text-sm text-red-700" role="alert">{error}</p>}
 
             <button
               type="submit"

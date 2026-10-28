@@ -3,8 +3,12 @@ import { Link } from 'react-router-dom'
 import { Sidebar } from '../components/layout/Sidebar'
 import { Card } from '../components/ui/Card'
 import { getCurrentUser } from '../features/auth/authService'
+import { getMyEstimate } from '../features/liquidations/liquidationService'
 import { getMyWorkdays } from '../features/workdays/workdayService'
+import { useToast } from '../context/ToastContext'
 import { getArgentinaToday, getWorkdayDateString } from '../features/workdays/workdayDate'
+
+const formatAmount = (value) => Number(value ?? 0).toLocaleString('es-AR', { style: 'currency', currency: 'ARS' })
 
 function isToday(value) {
   return getWorkdayDateString(value) === getArgentinaToday()
@@ -20,16 +24,20 @@ function getWeekStart(date = getArgentinaToday()) {
 export function HomePage() {
   const [user, setUser] = useState(null)
   const [workdays, setWorkdays] = useState([])
-  const [error, setError] = useState('')
+  const { toast } = useToast()
+  const [estimate, setEstimate] = useState(null)
 
   useEffect(() => {
     Promise.all([getCurrentUser(), getMyWorkdays()])
       .then(([currentUser, myWorkdays]) => {
         setUser(currentUser)
         setWorkdays(myWorkdays ?? [])
+        const today = getArgentinaToday()
+        return getMyEstimate({ userId: currentUser.id, month: today.slice(5, 7), year: today.slice(0, 4) })
       })
-      .catch((loadError) => setError(loadError.message || 'No se pudo cargar el resumen.'))
-  }, [])
+      .then((result) => setEstimate(result))
+      .catch((loadError) => toast.error(loadError.message || 'No se pudo cargar el resumen.'))
+  }, [toast])
 
   const todayHours = workdays
     .filter((item) => isToday(item.dateEntry) && item.estado !== 'Desaprobada')
@@ -64,9 +72,7 @@ export function HomePage() {
             <Link to="/mis-horas" className="rounded-xl bg-emerald-600 px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-700">+ Registrar horas</Link>
           </div>
 
-          {error && <p role="alert" className="mb-5 rounded-xl bg-red-50 p-3 text-sm text-red-700">{error}</p>}
-
-          <div className="grid gap-5 md:grid-cols-3">
+          <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
             <Card>
               <p className="text-sm font-medium text-slate-500">Horas de hoy</p>
               <p className="mt-3 text-4xl font-bold">{todayHours}<span className="ml-1 text-lg text-slate-400">h</span></p>
@@ -76,6 +82,11 @@ export function HomePage() {
               <p className="text-sm font-medium text-slate-500">Horas esta semana</p>
               <p className="mt-3 text-4xl font-bold">{weekHours}<span className="ml-1 text-lg text-slate-400">h</span></p>
               <p className="mt-2 text-sm text-slate-500">Aprobadas y pendientes</p>
+            </Card>
+            <Card>
+              <p className="text-sm font-medium text-slate-500">Sueldo estimado del mes</p>
+              <p className="mt-3 text-4xl font-bold">{formatAmount(estimate?.montoAcumulado)}</p>
+              <p className="mt-2 text-sm text-slate-500">{estimate?.totalHoras ?? 0} h · incluye jornadas pendientes</p>
             </Card>
             <Card>
               <p className="text-sm font-medium text-slate-500">Pendientes de aprobación</p>

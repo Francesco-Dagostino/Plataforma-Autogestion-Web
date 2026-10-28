@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Sidebar } from '../components/layout/Sidebar'
 import { Card } from '../components/ui/Card'
+import { useToast } from '../context/ToastContext'
 import { downloadMyPayslip, getMyLiquidations } from '../features/liquidations/liquidationService'
 
 const formatPeriod = (value) => new Date(value).toLocaleDateString('es-AR', { month: 'long', year: 'numeric' })
@@ -10,24 +11,22 @@ export function MyLiquidationsPage() {
   const [liquidations, setLiquidations] = useState([])
   const [loading, setLoading] = useState(true)
   const [downloadingId, setDownloadingId] = useState(null)
-  const [error, setError] = useState('')
+  const { toast } = useToast()
 
   const loadLiquidations = useCallback(async () => {
-    setError('')
     setLoading(true)
     try {
       setLiquidations((await getMyLiquidations()) ?? [])
     } catch (loadError) {
-      setError(loadError.message || 'No se pudieron cargar tus liquidaciones.')
+      toast.error(loadError.message || 'No se pudieron cargar tus liquidaciones.')
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [toast])
 
   useEffect(() => { loadLiquidations() }, [loadLiquidations])
 
   async function handleDownload(item) {
-    setError('')
     setDownloadingId(item.id)
     try {
       const pdf = await downloadMyPayslip(item.id)
@@ -40,7 +39,7 @@ export function MyLiquidationsPage() {
       link.remove()
       window.setTimeout(() => URL.revokeObjectURL(url), 1000)
     } catch (downloadError) {
-      setError(downloadError.message || 'No se pudo descargar el recibo.')
+      toast.error(downloadError.message || 'No se pudo descargar el recibo.')
     } finally {
       setDownloadingId(null)
     }
@@ -57,7 +56,6 @@ export function MyLiquidationsPage() {
 
         <div className="mx-auto max-w-7xl p-5 sm:p-8">
           <div className="mb-6"><h2 className="text-2xl font-bold">Historial de haberes</h2><p className="mt-1 text-slate-500">Consultá tus períodos liquidados y descargá cada recibo.</p></div>
-          {error && <p role="alert" className="mb-4 rounded-xl bg-red-50 p-3 text-sm text-red-700">{error}</p>}
 
           <Card>
             <div className="overflow-x-auto">

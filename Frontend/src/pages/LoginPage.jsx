@@ -1,14 +1,22 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { login } from '../features/auth/authService'
 import { getHomePathForRole } from '../features/auth/authStorage'
+import { useToast } from '../context/ToastContext'
 
 export function LoginPage() {
   const navigate = useNavigate()
   const [form, setForm] = useState({ userName: '', password: '' })
-  const [error, setError] = useState('')
+  const { toast } = useToast()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
+
+  useEffect(() => {
+    if (sessionStorage.getItem('autogestion_session_expired')) {
+      sessionStorage.removeItem('autogestion_session_expired')
+      toast.info('Tu sesión expiró. Ingresá de nuevo.')
+    }
+  }, [toast])
 
   function handleChange(event) {
     const { name, value } = event.target
@@ -17,10 +25,9 @@ export function LoginPage() {
 
   async function handleSubmit(event) {
     event.preventDefault()
-    setError('')
 
     if (!form.userName.trim() || !form.password) {
-      setError('Ingresá tu usuario y contraseña.')
+      toast.error('Ingresá tu usuario y contraseña.')
       return
     }
 
@@ -33,7 +40,7 @@ export function LoginPage() {
 
       navigate(getHomePathForRole(role), { replace: true })
     } catch (requestError) {
-      setError(requestError.message)
+      toast.error(requestError.message)
     } finally {
       setIsSubmitting(false)
     }
@@ -70,7 +77,6 @@ export function LoginPage() {
             </div>
           </div>
 
-          {error && <p className="rounded-xl bg-red-50 px-3 py-2.5 text-sm text-red-700" role="alert">{error}</p>}
 
           <button type="submit" disabled={isSubmitting} className="w-full rounded-xl bg-emerald-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-emerald-400">
             {isSubmitting ? 'Ingresando...' : 'Ingresar'}

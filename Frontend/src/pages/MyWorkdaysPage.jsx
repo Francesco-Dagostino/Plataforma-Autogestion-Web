@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Sidebar } from '../components/layout/Sidebar'
 import { Card } from '../components/ui/Card'
+import { useToast } from '../context/ToastContext'
 import { getCurrentUser } from '../features/auth/authService'
-import { createWorkday, getMyWorkdays } from '../features/workdays/workdayService'
-import { formatWorkdayDate, getArgentinaToday, getWorkdayDate } from '../features/workdays/workdayDate'
+import { createWorkday, getMyWorkdays, updateWorkday } from '../features/workdays/workdayService'
+import { formatWorkdayDate, getArgentinaToday, getWorkdayDate, getWorkdayDateString } from '../features/workdays/workdayDate'
 
 const weekDays = ['L', 'M', 'M', 'J', 'V', 'S', 'D']
 const statusStyles = {
@@ -79,10 +80,10 @@ function WorkdayChart({ workdays }) {
         <span className="flex items-center gap-1.5"><span className="size-2.5 rounded-sm bg-amber-400" />Pendientes: {pendingTotal} h</span>
       </div>
       <div className="mt-7 flex h-48 items-end justify-between gap-2 border-b border-slate-200 px-1 sm:gap-3">
-        {data.map((item) => {
+        {data.map((item, index) => {
           const hours = item.approved + item.pending
           return (
-            <div key={item.label} className="flex h-full min-w-0 flex-1 flex-col justify-end gap-2 text-center">
+            <div key={`${period}-${index}`} className="flex h-full min-w-0 flex-1 flex-col justify-end gap-2 text-center">
               <div className="flex w-full flex-col justify-end overflow-hidden rounded-t-md" style={{ height: `${(hours / maxHours) * 100}%`, minHeight: hours > 0 ? '12px' : '2px' }} title={`${item.approved} h aprobadas, ${item.pending} h pendientes`}>
                 {item.pending > 0 && <div className="w-full bg-amber-400" style={{ height: `${(item.pending / hours) * 100}%`, minHeight: '3px' }} />}
                 {item.approved > 0 && <div className="w-full bg-[#1e8567]" style={{ height: `${(item.approved / hours) * 100}%`, minHeight: '3px' }} />}
@@ -101,41 +102,52 @@ export function MyWorkdaysPage() {
   const [user, setUser] = useState(null)
   const [workdays, setWorkdays] = useState([])
   const [isModalOpen, setIsModalOpen] = useState(false)
+  const [editingId, setEditingId] = useState(null)
   const [formData, setFormData] = useState({ hoursWorked: 8, dateEntry: getArgentinaToday() })
   const [submitting, setSubmitting] = useState(false)
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState('')
-  const [notice, setNotice] = useState('')
+  const { toast } = useToast()
 
   const loadData = useCallback(async () => {
-    setError('')
     setLoading(true)
     try {
       const [currentUser, myWorkdays] = await Promise.all([getCurrentUser(), getMyWorkdays()])
       setUser(currentUser)
       setWorkdays(myWorkdays ?? [])
     } catch (loadError) {
-      setError(loadError.message || 'No se pudieron cargar tus jornadas.')
+      toast.error(loadError.message || 'No se pudieron cargar tus jornadas.')
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [toast])
 
   useEffect(() => { loadData() }, [loadData])
 
+  function openCreate() {
+    setEditingId(null)
+    setFormData({ hoursWorked: 8, dateEntry: getArgentinaToday() })
+    setIsModalOpen(true)
+  }
+
+  function openEdit(item) {
+    setEditingId(item.id)
+    setFormData({ hoursWorked: item.hoursWorked, dateEntry: getWorkdayDateString(item.dateEntry) })
+    setIsModalOpen(true)
+  }
+
   async function handleRegister(event) {
     event.preventDefault()
-    setError('')
-    setNotice('')
     setSubmitting(true)
     try {
-      await createWorkday(formData)
+      if (editingId) await updateWorkday(editingId, formData)
+      else await createWorkday(formData)
       setIsModalOpen(false)
+      setEditingId(null)
       setFormData({ hoursWorked: 8, dateEntry: getArgentinaToday() })
-      setNotice('Jornada registrada y enviada para aprobación.')
+      toast.success(editingId ? 'Jornada actualizada.' : 'Jornada registrada y enviada para aprobación.')
       await loadData()
     } catch (submitError) {
-      setError(submitError.message || 'Error al registrar jornada.')
+      toast.error(submitError.message || 'Error al registrar jornada.')
     } finally {
       setSubmitting(false)
     }
@@ -155,12 +167,9 @@ export function MyWorkdaysPage() {
             <div><h2 className="text-2xl font-bold">Horas registradas</h2><p className="mt-1 text-slate-500">Consultá tu actividad y el estado de cada jornada.</p></div>
             <div className="flex gap-2">
               <button onClick={loadData} disabled={loading} className="rounded-xl border border-slate-300 px-4 py-3 text-sm font-medium text-slate-700 hover:bg-white disabled:opacity-50">↻ {loading ? 'Actualizando...' : 'Actualizar'}</button>
-              <button onClick={() => { setError(''); setNotice(''); setIsModalOpen(true) }} className="rounded-xl bg-emerald-600 px-5 py-3 text-sm font-semibold text-white shadow-sm hover:bg-emerald-700">+ Registrar horas</button>
+              <button onClick={openCreate} className="rounded-xl bg-emerald-600 px-5 py-3 text-sm font-semibold text-white shadow-sm hover:bg-emerald-700">+ Registrar horas</button>
             </div>
           </div>
-
-          {error && <p role="alert" className="mb-4 rounded-xl bg-red-50 p-3 text-sm text-red-700">{error}</p>}
-          {notice && <p role="status" className="mb-4 rounded-xl bg-emerald-50 p-3 text-sm text-emerald-700">{notice}</p>}
 
           <WorkdayChart workdays={workdays} />
 
@@ -168,11 +177,11 @@ export function MyWorkdaysPage() {
             <div><h2 className="text-lg font-bold">Historial de jornadas</h2><p className="text-sm text-slate-500">Tus horas y su estado de aprobación.</p></div>
             <div className="mt-4 overflow-x-auto">
               <table className="w-full min-w-[520px] text-left text-sm">
-                <thead className="border-b border-slate-200 text-xs uppercase tracking-wide text-slate-500"><tr><th className="pb-3 font-medium">Fecha</th><th className="pb-3 font-medium">Horas</th><th className="pb-3 font-medium">Estado</th></tr></thead>
+                <thead className="border-b border-slate-200 text-xs uppercase tracking-wide text-slate-500"><tr><th className="pb-3 font-medium">Fecha</th><th className="pb-3 font-medium">Horas</th><th className="pb-3 font-medium">Estado</th><th className="pb-3"></th></tr></thead>
                 <tbody>
-                  {loading ? <tr><td colSpan={3} className="py-6 text-center text-slate-400">Cargando jornadas...</td></tr>
-                    : workdays.length === 0 ? <tr><td colSpan={3} className="py-6 text-center text-slate-400">Todavía no registraste jornadas.</td></tr>
-                      : workdays.map((item) => <tr key={item.id} className="border-b border-slate-100 last:border-0"><td className="py-4 font-medium">{formatDate(item.dateEntry)}</td><td className="py-4 font-semibold">{item.hoursWorked} h</td><td className="py-4"><span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${statusStyles[item.estado] ?? 'bg-slate-100 text-slate-600'}`}>{item.estado}</span></td></tr>)}
+                  {loading ? <tr><td colSpan={4} className="py-6 text-center text-slate-400">Cargando jornadas...</td></tr>
+                    : workdays.length === 0 ? <tr><td colSpan={4} className="py-6 text-center text-slate-400">Todavía no registraste jornadas.</td></tr>
+                      : workdays.map((item) => <tr key={item.id} className="border-b border-slate-100 last:border-0"><td className="py-4 font-medium">{formatDate(item.dateEntry)}</td><td className="py-4 font-semibold">{item.hoursWorked} h</td><td className="py-4"><span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${statusStyles[item.estado] ?? 'bg-slate-100 text-slate-600'}`}>{item.estado}</span>{item.estado === 'Desaprobada' && item.motivoRechazo && <p className="mt-1 max-w-xs text-xs text-slate-500">Motivo: {item.motivoRechazo}</p>}</td><td className="py-4 text-right">{item.estado === 'Pendiente' && <button type="button" onClick={() => openEdit(item)} className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50">Editar</button>}</td></tr>)}
                 </tbody>
               </table>
             </div>
@@ -183,12 +192,11 @@ export function MyWorkdaysPage() {
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4 backdrop-blur-sm">
           <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
-            <h2 className="text-lg font-bold">Registrar horas trabajadas</h2><p className="mt-1 text-sm text-slate-500">La jornada quedará pendiente de aprobación.</p>
-            {error && <p role="alert" className="mt-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">{error}</p>}
+            <h2 className="text-lg font-bold">{editingId ? 'Editar jornada' : 'Registrar horas trabajadas'}</h2><p className="mt-1 text-sm text-slate-500">{editingId ? 'Podés modificarla mientras esté pendiente de aprobación.' : 'La jornada quedará pendiente de aprobación.'}</p>
             <form onSubmit={handleRegister} className="mt-5 space-y-4">
               <label className="block text-xs font-semibold uppercase text-slate-500">Fecha de jornada<input type="date" required value={formData.dateEntry} onChange={(event) => setFormData({ ...formData, dateEntry: event.target.value })} className="mt-1.5 w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm" /></label>
               <label className="block text-xs font-semibold uppercase text-slate-500">Horas trabajadas<input type="number" step="0.5" min="0.5" max="24" required value={formData.hoursWorked} onChange={(event) => setFormData({ ...formData, hoursWorked: event.target.value })} className="mt-1.5 w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm" /></label>
-              <div className="flex justify-end gap-3 pt-2"><button type="button" onClick={() => setIsModalOpen(false)} className="rounded-xl px-4 py-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-100">Cancelar</button><button type="submit" disabled={submitting} className="rounded-xl bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-50">{submitting ? 'Guardando...' : 'Guardar jornada'}</button></div>
+              <div className="flex justify-end gap-3 pt-2"><button type="button" onClick={() => { setIsModalOpen(false); setEditingId(null) }} className="rounded-xl px-4 py-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-100">Cancelar</button><button type="submit" disabled={submitting} className="rounded-xl bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-50">{submitting ? 'Guardando...' : editingId ? 'Guardar cambios' : 'Guardar jornada'}</button></div>
             </form>
           </div>
         </div>

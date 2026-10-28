@@ -1,20 +1,19 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { forgotPassword } from '../features/auth/authService'
+import { useToast } from '../context/ToastContext'
 
 export function ForgotPasswordPage() {
   const [email, setEmail] = useState('')
-  const [error, setError] = useState('')
+  const { toast } = useToast()
   const [success, setSuccess] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   async function handleSubmit(event) {
     event.preventDefault()
-    setError('')
-
     const trimmedEmail = email.trim()
     if (!trimmedEmail) {
-      setError('Por favor, ingresá tu correo electrónico.')
+      toast.error('Por favor, ingresá tu correo electrónico.')
       return
     }
 
@@ -23,7 +22,7 @@ export function ForgotPasswordPage() {
       await forgotPassword(trimmedEmail)
       setSuccess(true)
     } catch (requestError) {
-      setError(requestError.message || 'No se pudo procesar la solicitud.')
+      toast.error(requestError.message || 'No se pudo procesar la solicitud.')
     } finally {
       setIsSubmitting(false)
     }
@@ -75,7 +74,6 @@ export function ForgotPasswordPage() {
               />
             </div>
 
-            {error && <p className="rounded-xl bg-red-50 px-3 py-2.5 text-sm text-red-700" role="alert">{error}</p>}
 
             <button
               type="submit"
