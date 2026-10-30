@@ -24,6 +24,12 @@ function Icon({ name }) {
         <path d="M9 8h6M9 12h6" />
       </>
     ),
+    chart: (
+      <>
+        <path d="M4 20h16" />
+        <path d="M7 20v-7M12 20V6M17 20v-10" />
+      </>
+    ),
   }
 
   return (

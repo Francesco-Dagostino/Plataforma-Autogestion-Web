@@ -24,3 +24,8 @@ export function createWorkday(workday) {
 export function updateWorkday(id, workday) {
   return apiClient(`/Workday/${id}`, { method: 'PUT', body: toWorkdayPayload(workday) })
 }
+
+// Máximo de horas que la empresa permite declarar por día
+export function getDailyLimit() {
+  return apiClient('/Company/tope-horas')
+}

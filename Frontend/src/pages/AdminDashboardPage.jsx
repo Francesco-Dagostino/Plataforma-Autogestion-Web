@@ -1,5 +1,8 @@
 import { useEffect, useState } from 'react'
 import { Sidebar } from '../components/layout/Sidebar'
+import { NotificationBell } from '../components/NotificationBell'
+import { RateHistory } from '../components/admin/RateHistory'
+import { StatisticsPanel } from '../components/admin/StatisticsPanel'
 import { useToast } from '../context/ToastContext'
 import { formatWorkdayDate } from '../features/workdays/workdayDate'
 import {
@@ -13,9 +16,12 @@ import {
   getMyCompany,
   getMonthlyClosure,
   getPendingWorkdays,
+  getRateHistory,
   getResolvedWorkdays,
   rejectWorkday,
   simulateLiquidation,
+  updateDailyLimit,
+  updateHolidayRate,
   updateHourlyRate,
   updateEmployee,
   updateMyCompany,
@@ -46,6 +52,7 @@ const sections = {
   aprobaciones: { label: 'Aprobaciones', title: 'Monitor de aprobación' },
   empleados: { label: 'Empleados', title: 'Gestión de empleados' },
   liquidaciones: { label: 'Liquidaciones', title: 'Liquidaciones de haberes' },
+  estadisticas: { label: 'Estadísticas', title: 'Estadísticas de horas y costos' },
   miEmpresa: { label: 'Mi empresa', title: 'Datos de la empresa' },
 }
 
@@ -53,6 +60,7 @@ const adminNavigation = [
   { label: 'Aprobaciones', icon: 'home', path: '/admin' },
   { label: 'Empleados', icon: 'clock', path: '/admin/empleados' },
   { label: 'Liquidaciones', icon: 'receipt', path: '/admin/liquidaciones' },
+  { label: 'Estadísticas', icon: 'chart', path: '/admin/estadisticas' },
   { label: 'Mi empresa', icon: 'home', path: '/admin/mi-empresa' },
 ]
 
@@ -61,6 +69,10 @@ export function AdminDashboardPage({ section = 'aprobaciones' }) {
   const [pending, setPending] = useState([])
   const [resolved, setResolved] = useState([])
   const [hourlyRate, setHourlyRate] = useState('')
+  const [holidayRate, setHolidayRate] = useState('')
+  const [effectiveHolidayRate, setEffectiveHolidayRate] = useState(null)
+  const [rateHistory, setRateHistory] = useState([])
+  const [dailyLimit, setDailyLimit] = useState('')
   const [companyForm, setCompanyForm] = useState({ name: '', cuit: '' })
   const [employees, setEmployees] = useState([])
   const [employee, setEmployee] = useState(emptyEmployee)
@@ -90,12 +102,25 @@ export function AdminDashboardPage({ section = 'aprobaciones' }) {
       if (section === 'miEmpresa') {
         const company = await getMyCompany()
         setCompanyForm({ name: company.name ?? '', cuit: String(company.cuit ?? '') })
+        setDailyLimit(String(company.dailyHoursLimit ?? ''))
       }
     } catch (e) {
       toast.error(e.message)
     } finally {
       setLoadingData(false)
     }
+  }
+
+  function applyRates(company) {
+    setHourlyRate(String(company.parameterSystem ?? ''))
+    setHolidayRate(String(company.holidayHourlyRate ?? ''))
+    setEffectiveHolidayRate(company.effectiveHolidayRate ?? null)
+  }
+
+  // Vuelve a leer los valores vigentes y su historial después de un cambio.
+  async function refreshRates() {
+    applyRates(await getMyCompany())
+    setRateHistory((await getRateHistory()) ?? [])
   }
 
   async function refreshLiquidation() {
@@ -128,7 +153,10 @@ export function AdminDashboardPage({ section = 'aprobaciones' }) {
   useEffect(() => {
     if (section === 'liquidaciones') {
       getMyCompany()
-        .then((company) => setHourlyRate(String(company.parameterSystem ?? '')))
+        .then(applyRates)
+        .catch((e) => toast.error(e.message))
+      getRateHistory()
+        .then((items) => setRateHistory(items ?? []))
         .catch((e) => toast.error(e.message))
     }
     if (section !== 'liquidaciones') load()
@@ -245,7 +273,35 @@ export function AdminDashboardPage({ section = 'aprobaciones' }) {
     setBusy(true)
     try {
       await updateHourlyRate(hourlyRate)
+      await refreshRates()
       toast.success('Valor por hora actualizado.')
+    } catch (e) {
+      toast.error(e.message)
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  async function saveDailyLimit(event) {
+    event.preventDefault()
+    setBusy(true)
+    try {
+      await updateDailyLimit(dailyLimit)
+      toast.success('Tope de horas diarias actualizado.')
+    } catch (e) {
+      toast.error(e.message)
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  async function saveHolidayRate(event, useDefault = false) {
+    event?.preventDefault()
+    setBusy(true)
+    try {
+      await updateHolidayRate(useDefault ? '' : holidayRate)
+      await refreshRates()
+      toast.success(useDefault ? 'Los feriados y fines de semana se pagan el doble.' : 'Valor por hora de feriados actualizado.')
     } catch (e) {
       toast.error(e.message)
     } finally {
@@ -299,7 +355,7 @@ export function AdminDashboardPage({ section = 'aprobaciones' }) {
       <div className="min-w-0 flex-1">
         <header className="flex items-center justify-between border-b bg-white px-5 py-4 sm:px-8">
           <div><p className="text-xs font-semibold uppercase text-emerald-600">Mi panel</p><h1 className="text-xl font-bold">{current.label}</h1></div>
-          <button onClick={section === 'liquidaciones' ? resetLiquidationView : load} disabled={loadingData || busy} className="rounded-xl border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 transition hover:border-emerald-600 hover:bg-emerald-50 hover:text-emerald-800 focus:outline-none focus:ring-2 focus:ring-emerald-200 disabled:opacity-50"><span aria-hidden="true" className="mr-2">↻</span>{loadingData ? 'Actualizando...' : 'Actualizar datos'}</button>
+          <div className="flex items-center gap-2"><NotificationBell onNew={section === 'aprobaciones' ? load : undefined} />{section !== 'estadisticas' && <button onClick={section === 'liquidaciones' ? resetLiquidationView : load} disabled={loadingData || busy} className="rounded-xl border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 transition hover:border-emerald-600 hover:bg-emerald-50 hover:text-emerald-800 focus:outline-none focus:ring-2 focus:ring-emerald-200 disabled:opacity-50"><span aria-hidden="true" className="mr-2">↻</span>{loadingData ? 'Actualizando...' : 'Actualizar datos'}</button>}</div>
         </header>
 
         <div className="mx-auto max-w-7xl p-5 sm:p-8">
@@ -327,6 +383,8 @@ export function AdminDashboardPage({ section = 'aprobaciones' }) {
             </section>
           )}
 
+          {section === 'estadisticas' && <StatisticsPanel />}
+
           {section === 'miEmpresa' && (
             <section className="max-w-2xl rounded-2xl bg-white p-5 shadow-sm">
               <h2 className="text-2xl font-bold">Datos de la empresa</h2>
@@ -335,6 +393,12 @@ export function AdminDashboardPage({ section = 'aprobaciones' }) {
                 <label className="block text-xs font-semibold uppercase text-slate-500">Nombre<input required maxLength={150} value={companyForm.name} onChange={(event) => setCompanyForm({ ...companyForm, name: event.target.value })} className="mt-1.5 w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm font-normal normal-case text-slate-900" /></label>
                 <label className="block text-xs font-semibold uppercase text-slate-500">CUIT<input required inputMode="numeric" pattern="[0-9]{11}" title="Ingresá los 11 dígitos del CUIT, sin guiones" value={companyForm.cuit} onChange={(event) => setCompanyForm({ ...companyForm, cuit: event.target.value.replace(/\D/g, '').slice(0, 11) })} className="mt-1.5 w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm font-normal normal-case text-slate-900" /></label>
                 <button disabled={busy || loadingData} className="rounded-xl bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-50">{busy ? 'Guardando...' : 'Guardar cambios'}</button>
+              </form>
+
+              <form onSubmit={saveDailyLimit} className="mt-8 space-y-4 border-t border-slate-100 pt-6">
+                <div><h3 className="text-lg font-bold">Tope de horas diarias</h3><p className="mt-1 text-sm text-slate-500">Máximo de horas que un empleado puede declarar en un solo día. Si carga más, el sistema lo rechaza.</p></div>
+                <label className="block text-xs font-semibold uppercase text-slate-500">Horas por día<input required type="number" step="0.5" min="0.5" max="24" value={dailyLimit} onChange={(event) => setDailyLimit(event.target.value)} className={fieldClass} /></label>
+                <button disabled={busy || loadingData} className="rounded-xl bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-50">{busy ? 'Guardando...' : 'Guardar tope'}</button>
               </form>
             </section>
           )}
@@ -358,6 +422,13 @@ export function AdminDashboardPage({ section = 'aprobaciones' }) {
                 <label className="text-xs font-semibold uppercase text-slate-500">Valor por hora (ARS)<input required type="number" min="0.01" max="999999" step="0.01" value={hourlyRate} onChange={(event) => setHourlyRate(event.target.value)} className="mt-1 block w-40 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-normal normal-case text-slate-900" /></label>
                 <button disabled={busy || loadingData} className="rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-50">Guardar valor</button>
               </form>
+              <form onSubmit={saveHolidayRate} className="mt-3 flex flex-wrap items-end gap-3 rounded-xl border border-slate-200 bg-slate-50 p-4">
+                <label className="text-xs font-semibold uppercase text-slate-500">Valor por hora en feriados y fines de semana (ARS)<input type="number" min="0.01" max="999999" step="0.01" value={holidayRate} onChange={(event) => setHolidayRate(event.target.value)} placeholder={effectiveHolidayRate ? `Doble: ${effectiveHolidayRate}` : 'Doble del valor hora'} className="mt-1 block w-60 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-normal normal-case text-slate-900" /></label>
+                <button disabled={busy || loadingData || !holidayRate} className="rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-50">Guardar valor</button>
+                <button type="button" disabled={busy || loadingData || !holidayRate} onClick={() => saveHolidayRate(null, true)} className="rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-white disabled:opacity-50">Usar el doble</button>
+                <p className="basis-full text-xs text-slate-500">{holidayRate ? 'Se paga este valor por hora trabajada en sábados, domingos y feriados.' : `Sin valor propio: sábados, domingos y feriados se pagan ${effectiveHolidayRate ? `$${effectiveHolidayRate}` : 'el doble'} por hora (el doble del valor hora).`}</p>
+              </form>
+              <RateHistory items={rateHistory} />
               <div className="mt-4 flex flex-wrap gap-3">
                 <select aria-label="Mes" disabled={loadingData || busy} value={period.month} onChange={(event) => setPeriod({ ...period, month: Number(event.target.value) })} className="rounded-xl border p-2 disabled:opacity-50">{Array.from({ length: 12 }, (_, index) => <option key={index + 1} value={index + 1}>{new Date(now.getFullYear(), index).toLocaleDateString('es-AR', { month: 'long' })}</option>)}</select>
                 <input aria-label="Año" type="number" disabled={loadingData || busy} value={period.year} onChange={(event) => setPeriod({ ...period, year: Number(event.target.value) })} className="w-24 rounded-xl border p-2 disabled:opacity-50" />

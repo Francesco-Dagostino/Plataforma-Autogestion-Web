@@ -24,6 +24,7 @@ export function AppRoutes() {
       <Route path="/admin" element={<ProtectedRoute allowedRoles={['Admin']}><AdminDashboardPage /></ProtectedRoute>} />
       <Route path="/admin/empleados" element={<ProtectedRoute allowedRoles={['Admin']}><AdminDashboardPage section="empleados" /></ProtectedRoute>} />
       <Route path="/admin/liquidaciones" element={<ProtectedRoute allowedRoles={['Admin']}><AdminDashboardPage section="liquidaciones" /></ProtectedRoute>} />
+      <Route path="/admin/estadisticas" element={<ProtectedRoute allowedRoles={['Admin']}><AdminDashboardPage section="estadisticas" /></ProtectedRoute>} />
       <Route path="/admin/mi-empresa" element={<ProtectedRoute allowedRoles={['Admin']}><AdminDashboardPage section="miEmpresa" /></ProtectedRoute>} />
       <Route path="/super-admin" element={<ProtectedRoute allowedRoles={['SuperAdmin']}><SuperAdminPage /></ProtectedRoute>} />
       <Route path="/" element={<Navigate to="/inicio" replace />} />

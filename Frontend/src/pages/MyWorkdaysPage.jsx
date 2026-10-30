@@ -3,7 +3,7 @@ import { Sidebar } from '../components/layout/Sidebar'
 import { Card } from '../components/ui/Card'
 import { useToast } from '../context/ToastContext'
 import { getCurrentUser } from '../features/auth/authService'
-import { createWorkday, getMyWorkdays, updateWorkday } from '../features/workdays/workdayService'
+import { createWorkday, getDailyLimit, getMyWorkdays, updateWorkday } from '../features/workdays/workdayService'
 import { formatWorkdayDate, getArgentinaToday, getWorkdayDate, getWorkdayDateString } from '../features/workdays/workdayDate'
 
 const weekDays = ['L', 'M', 'M', 'J', 'V', 'S', 'D']
@@ -101,6 +101,7 @@ function WorkdayChart({ workdays }) {
 export function MyWorkdaysPage() {
   const [user, setUser] = useState(null)
   const [workdays, setWorkdays] = useState([])
+  const [dailyLimit, setDailyLimit] = useState(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingId, setEditingId] = useState(null)
   const [formData, setFormData] = useState({ hoursWorked: 8, dateEntry: getArgentinaToday() })
@@ -111,8 +112,9 @@ export function MyWorkdaysPage() {
   const loadData = useCallback(async () => {
     setLoading(true)
     try {
-      const [currentUser, myWorkdays] = await Promise.all([getCurrentUser(), getMyWorkdays()])
+      const [currentUser, myWorkdays, limit] = await Promise.all([getCurrentUser(), getMyWorkdays(), getDailyLimit().catch(() => null)])
       setUser(currentUser)
+      setDailyLimit(limit?.dailyHoursLimit ?? null)
       setWorkdays(myWorkdays ?? [])
     } catch (loadError) {
       toast.error(loadError.message || 'No se pudieron cargar tus jornadas.')
@@ -195,7 +197,7 @@ export function MyWorkdaysPage() {
             <h2 className="text-lg font-bold">{editingId ? 'Editar jornada' : 'Registrar horas trabajadas'}</h2><p className="mt-1 text-sm text-slate-500">{editingId ? 'Podés modificarla mientras esté pendiente de aprobación.' : 'La jornada quedará pendiente de aprobación.'}</p>
             <form onSubmit={handleRegister} className="mt-5 space-y-4">
               <label className="block text-xs font-semibold uppercase text-slate-500">Fecha de jornada<input type="date" required value={formData.dateEntry} onChange={(event) => setFormData({ ...formData, dateEntry: event.target.value })} className="mt-1.5 w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm" /></label>
-              <label className="block text-xs font-semibold uppercase text-slate-500">Horas trabajadas<input type="number" step="0.5" min="0.5" max="24" required value={formData.hoursWorked} onChange={(event) => setFormData({ ...formData, hoursWorked: event.target.value })} className="mt-1.5 w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm" /></label>
+              <label className="block text-xs font-semibold uppercase text-slate-500">Horas trabajadas{dailyLimit ? ` (máx. ${String(dailyLimit).replace('.', ',')} h por día)` : ''}<input type="number" step="0.5" min="0.5" max={dailyLimit ?? 24} required value={formData.hoursWorked} onChange={(event) => setFormData({ ...formData, hoursWorked: event.target.value })} className="mt-1.5 w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm" /></label>
               <div className="flex justify-end gap-3 pt-2"><button type="button" onClick={() => { setIsModalOpen(false); setEditingId(null) }} className="rounded-xl px-4 py-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-100">Cancelar</button><button type="submit" disabled={submitting} className="rounded-xl bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-50">{submitting ? 'Guardando...' : editingId ? 'Guardar cambios' : 'Guardar jornada'}</button></div>
             </form>
           </div>
