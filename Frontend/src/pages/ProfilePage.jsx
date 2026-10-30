@@ -4,12 +4,13 @@ import { useToast } from '../context/ToastContext'
 import { getCurrentUser } from '../features/auth/authService'
 import { getUserRole } from '../features/auth/authStorage'
 
-const superAdminNavigation = [{ label: 'Empresas', icon: 'home', path: '/super-admin' }]
+const superAdminNavigation = [{ label: 'Empresas', icon: 'building', path: '/super-admin' }]
 const adminNavigation = [
   { label: 'Aprobaciones', icon: 'home', path: '/admin' },
   { label: 'Empleados', icon: 'clock', path: '/admin/empleados' },
   { label: 'Liquidaciones', icon: 'receipt', path: '/admin/liquidaciones' },
-  { label: 'Mi empresa', icon: 'home', path: '/admin/mi-empresa' },
+  { label: 'Estadísticas', icon: 'chart', path: '/admin/estadisticas' },
+  { label: 'Mi empresa', icon: 'building', path: '/admin/mi-empresa' },
 ]
 
 export function ProfilePage() {
@@ -58,10 +59,7 @@ export function ProfilePage() {
       <section className="flex-1 p-5 sm:p-8">
         <div className="mx-auto max-w-3xl">
           <div className="mb-7">
-            <p className="text-sm font-semibold uppercase tracking-wider text-emerald-600">
-              Cuenta
-            </p>
-            <h1 className="mt-1 text-2xl font-bold text-slate-900">
+            <h1 className="text-2xl font-bold text-slate-900">
               Mi perfil
             </h1>
             <p className="mt-1 text-slate-500">
@@ -74,9 +72,9 @@ export function ProfilePage() {
           )}
 
           {user && (
-            <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+            <section className="rounded-2xl border border-slate-200 bg-white p-6">
               <div className="flex items-center gap-4 border-b border-slate-200 pb-6">
-                <div className="grid size-16 place-items-center rounded-full bg-[#d8eadf] text-lg font-bold text-emerald-800">
+                <div className="grid size-16 place-items-center rounded-full bg-primary-100 text-lg font-bold text-primary-800">
                   {initials}
                 </div>
 

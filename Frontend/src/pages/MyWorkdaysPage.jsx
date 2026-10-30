@@ -1,6 +1,10 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Sidebar } from '../components/layout/Sidebar'
 import { Card } from '../components/ui/Card'
+import { Pagination } from '../components/ui/Pagination'
+import { StatusSortSelect } from '../components/ui/StatusSortSelect'
+import { paginate } from '../features/pagination/paginate'
+import { sortByStatus } from '../features/pagination/sortByStatus'
 import { useToast } from '../context/ToastContext'
 import { getCurrentUser } from '../features/auth/authService'
 import { createWorkday, getDailyLimit, getMyWorkdays, updateWorkday } from '../features/workdays/workdayService'
@@ -71,12 +75,12 @@ function WorkdayChart({ workdays }) {
           <p className="text-sm text-slate-500">{period === 'week' ? 'Horas por día' : 'Horas por bloque de siete días'}</p>
         </div>
         <div className="flex rounded-lg bg-slate-100 p-1" aria-label="Período de la gráfica">
-          <button type="button" aria-pressed={period === 'week'} onClick={() => setPeriod('week')} className={`rounded-md px-3 py-1.5 text-xs font-semibold ${period === 'week' ? 'bg-white text-emerald-700 shadow-sm' : 'text-slate-500'}`}>Semana</button>
-          <button type="button" aria-pressed={period === 'month'} onClick={() => setPeriod('month')} className={`rounded-md px-3 py-1.5 text-xs font-semibold ${period === 'month' ? 'bg-white text-emerald-700 shadow-sm' : 'text-slate-500'}`}>Mes</button>
+          <button type="button" aria-pressed={period === 'week'} onClick={() => setPeriod('week')} className={`rounded-md px-3 py-1.5 text-xs font-semibold ${period === 'week' ? 'bg-white text-primary-700 border border-slate-200' : 'text-slate-500'}`}>Semana</button>
+          <button type="button" aria-pressed={period === 'month'} onClick={() => setPeriod('month')} className={`rounded-md px-3 py-1.5 text-xs font-semibold ${period === 'month' ? 'bg-white text-primary-700 border border-slate-200' : 'text-slate-500'}`}>Mes</button>
         </div>
       </div>
       <div className="mt-4 flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-500">
-        <span className="flex items-center gap-1.5"><span className="size-2.5 rounded-sm bg-[#1e8567]" />Aprobadas: {approvedTotal} h</span>
+        <span className="flex items-center gap-1.5"><span className="size-2.5 rounded-sm bg-emerald-500" />Aprobadas: {approvedTotal} h</span>
         <span className="flex items-center gap-1.5"><span className="size-2.5 rounded-sm bg-amber-400" />Pendientes: {pendingTotal} h</span>
       </div>
       <div className="mt-7 flex h-48 items-end justify-between gap-2 border-b border-slate-200 px-1 sm:gap-3">
@@ -86,7 +90,7 @@ function WorkdayChart({ workdays }) {
             <div key={`${period}-${index}`} className="flex h-full min-w-0 flex-1 flex-col justify-end gap-2 text-center">
               <div className="flex w-full flex-col justify-end overflow-hidden rounded-t-md" style={{ height: `${(hours / maxHours) * 100}%`, minHeight: hours > 0 ? '12px' : '2px' }} title={`${item.approved} h aprobadas, ${item.pending} h pendientes`}>
                 {item.pending > 0 && <div className="w-full bg-amber-400" style={{ height: `${(item.pending / hours) * 100}%`, minHeight: '3px' }} />}
-                {item.approved > 0 && <div className="w-full bg-[#1e8567]" style={{ height: `${(item.approved / hours) * 100}%`, minHeight: '3px' }} />}
+                {item.approved > 0 && <div className="w-full bg-emerald-500" style={{ height: `${(item.approved / hours) * 100}%`, minHeight: '3px' }} />}
               </div>
               <span className="truncate text-[10px] font-medium text-slate-500 sm:text-xs">{period === 'week' ? item.label : `días ${item.label}`}</span>
             </div>
@@ -102,6 +106,8 @@ export function MyWorkdaysPage() {
   const [user, setUser] = useState(null)
   const [workdays, setWorkdays] = useState([])
   const [dailyLimit, setDailyLimit] = useState(null)
+  const [historyPage, setHistoryPage] = useState(1)
+  const [historySort, setHistorySort] = useState('recientes')
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingId, setEditingId] = useState(null)
   const [formData, setFormData] = useState({ hoursWorked: 8, dateEntry: getArgentinaToday() })
@@ -125,6 +131,9 @@ export function MyWorkdaysPage() {
 
   useEffect(() => { loadData() }, [loadData])
 
+  const sortedWorkdays = [...workdays].sort((a, b) => new Date(b.dateEntry) - new Date(a.dateEntry))
+  const workdaysPaged = paginate(sortByStatus(sortedWorkdays, historySort), historyPage)
+
   function openCreate() {
     setEditingId(null)
     setFormData({ hoursWorked: 8, dateEntry: getArgentinaToday() })
@@ -147,6 +156,7 @@ export function MyWorkdaysPage() {
       setEditingId(null)
       setFormData({ hoursWorked: 8, dateEntry: getArgentinaToday() })
       toast.success(editingId ? 'Jornada actualizada.' : 'Jornada registrada y enviada para aprobación.')
+      setHistoryPage(1)
       await loadData()
     } catch (submitError) {
       toast.error(submitError.message || 'Error al registrar jornada.')
@@ -160,7 +170,7 @@ export function MyWorkdaysPage() {
       <Sidebar />
       <div className="min-w-0 flex-1">
         <header className="flex items-center justify-between border-b border-slate-200 bg-white px-5 py-4 sm:px-8">
-          <div><p className="text-xs font-semibold uppercase tracking-wider text-emerald-600">Mis horas</p><h1 className="text-xl font-bold">Mis jornadas</h1></div>
+          <div><h1 className="text-xl font-bold">Mis jornadas</h1></div>
           <div className="hidden text-right sm:block"><p className="text-sm font-semibold">{user?.name ?? 'Cargando...'}</p><p className="text-xs text-slate-500">{user?.role ?? ''}</p></div>
         </header>
 
@@ -168,37 +178,41 @@ export function MyWorkdaysPage() {
           <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
             <div><h2 className="text-2xl font-bold">Horas registradas</h2><p className="mt-1 text-slate-500">Consultá tu actividad y el estado de cada jornada.</p></div>
             <div className="flex gap-2">
-              <button onClick={loadData} disabled={loading} className="rounded-xl border border-slate-300 px-4 py-3 text-sm font-medium text-slate-700 hover:bg-white disabled:opacity-50">↻ {loading ? 'Actualizando...' : 'Actualizar'}</button>
-              <button onClick={openCreate} className="rounded-xl bg-emerald-600 px-5 py-3 text-sm font-semibold text-white shadow-sm hover:bg-emerald-700">+ Registrar horas</button>
+              <button onClick={loadData} disabled={loading} className="rounded-xl border border-slate-300 px-4 py-3 text-sm font-medium text-slate-700 hover:bg-white disabled:opacity-50">{loading ? 'Actualizando...' : 'Actualizar'}</button>
+              <button onClick={openCreate} className="rounded-xl bg-primary-600 px-5 py-3 text-sm font-semibold text-white hover:bg-primary-700">+ Registrar horas</button>
             </div>
           </div>
 
           <WorkdayChart workdays={workdays} />
 
           <Card className="mt-5">
-            <div><h2 className="text-lg font-bold">Historial de jornadas</h2><p className="text-sm text-slate-500">Tus horas y su estado de aprobación.</p></div>
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div><h2 className="text-lg font-bold">Historial de jornadas</h2><p className="text-sm text-slate-500">Tus horas y su estado de aprobación.</p></div>
+              <StatusSortSelect value={historySort} onChange={(mode) => { setHistorySort(mode); setHistoryPage(1) }} options={['recientes', 'Pendiente', 'Aprobada', 'Desaprobada']} />
+            </div>
             <div className="mt-4 overflow-x-auto">
               <table className="w-full min-w-[520px] text-left text-sm">
-                <thead className="border-b border-slate-200 text-xs uppercase tracking-wide text-slate-500"><tr><th className="pb-3 font-medium">Fecha</th><th className="pb-3 font-medium">Horas</th><th className="pb-3 font-medium">Estado</th><th className="pb-3"></th></tr></thead>
+                <thead className="border-b border-slate-200 text-xs text-slate-500"><tr><th className="pb-3 font-medium">Fecha</th><th className="pb-3 font-medium">Horas</th><th className="pb-3 font-medium">Estado</th><th className="pb-3"></th></tr></thead>
                 <tbody>
                   {loading ? <tr><td colSpan={4} className="py-6 text-center text-slate-400">Cargando jornadas...</td></tr>
                     : workdays.length === 0 ? <tr><td colSpan={4} className="py-6 text-center text-slate-400">Todavía no registraste jornadas.</td></tr>
-                      : workdays.map((item) => <tr key={item.id} className="border-b border-slate-100 last:border-0"><td className="py-4 font-medium">{formatDate(item.dateEntry)}</td><td className="py-4 font-semibold">{item.hoursWorked} h</td><td className="py-4"><span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${statusStyles[item.estado] ?? 'bg-slate-100 text-slate-600'}`}>{item.estado}</span>{item.estado === 'Desaprobada' && item.motivoRechazo && <p className="mt-1 max-w-xs text-xs text-slate-500">Motivo: {item.motivoRechazo}</p>}</td><td className="py-4 text-right">{item.estado === 'Pendiente' && <button type="button" onClick={() => openEdit(item)} className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50">Editar</button>}</td></tr>)}
+                      : workdaysPaged.items.map((item) => <tr key={item.id} className="border-b border-slate-100 last:border-0"><td className="py-4 font-medium">{formatDate(item.dateEntry)}</td><td className="py-4 font-semibold">{item.hoursWorked} h</td><td className="py-4"><span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${statusStyles[item.estado] ?? 'bg-slate-100 text-slate-600'}`}>{item.estado}</span>{item.estado === 'Desaprobada' && item.motivoRechazo && <p className="mt-1 max-w-xs text-xs text-slate-500">Motivo: {item.motivoRechazo}</p>}</td><td className="py-4 text-right">{item.estado === 'Pendiente' && <button type="button" onClick={() => openEdit(item)} className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50">Editar</button>}</td></tr>)}
                 </tbody>
               </table>
             </div>
+            <Pagination paged={workdaysPaged} onChange={setHistoryPage} label="Paginación del historial de jornadas" />
           </Card>
         </div>
       </div>
 
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4 backdrop-blur-sm">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4">
           <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
             <h2 className="text-lg font-bold">{editingId ? 'Editar jornada' : 'Registrar horas trabajadas'}</h2><p className="mt-1 text-sm text-slate-500">{editingId ? 'Podés modificarla mientras esté pendiente de aprobación.' : 'La jornada quedará pendiente de aprobación.'}</p>
             <form onSubmit={handleRegister} className="mt-5 space-y-4">
-              <label className="block text-xs font-semibold uppercase text-slate-500">Fecha de jornada<input type="date" required value={formData.dateEntry} onChange={(event) => setFormData({ ...formData, dateEntry: event.target.value })} className="mt-1.5 w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm" /></label>
-              <label className="block text-xs font-semibold uppercase text-slate-500">Horas trabajadas{dailyLimit ? ` (máx. ${String(dailyLimit).replace('.', ',')} h por día)` : ''}<input type="number" step="0.5" min="0.5" max={dailyLimit ?? 24} required value={formData.hoursWorked} onChange={(event) => setFormData({ ...formData, hoursWorked: event.target.value })} className="mt-1.5 w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm" /></label>
-              <div className="flex justify-end gap-3 pt-2"><button type="button" onClick={() => { setIsModalOpen(false); setEditingId(null) }} className="rounded-xl px-4 py-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-100">Cancelar</button><button type="submit" disabled={submitting} className="rounded-xl bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-50">{submitting ? 'Guardando...' : editingId ? 'Guardar cambios' : 'Guardar jornada'}</button></div>
+              <label className="block text-xs font-semibold text-slate-500">Fecha de jornada<input type="date" required value={formData.dateEntry} onChange={(event) => setFormData({ ...formData, dateEntry: event.target.value })} className="mt-1.5 w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm" /></label>
+              <label className="block text-xs font-semibold text-slate-500">Horas trabajadas{dailyLimit ? ` (máx. ${String(dailyLimit).replace('.', ',')} h por día)` : ''}<input type="number" step="0.5" min="0.5" max={dailyLimit ?? 24} required value={formData.hoursWorked} onChange={(event) => setFormData({ ...formData, hoursWorked: event.target.value })} className="mt-1.5 w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm" /></label>
+              <div className="flex justify-end gap-3 pt-2"><button type="button" onClick={() => { setIsModalOpen(false); setEditingId(null) }} className="rounded-xl px-4 py-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-100">Cancelar</button><button type="submit" disabled={submitting} className="rounded-xl bg-primary-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-primary-700 disabled:opacity-50">{submitting ? 'Guardando...' : editingId ? 'Guardar cambios' : 'Guardar jornada'}</button></div>
             </form>
           </div>
         </div>

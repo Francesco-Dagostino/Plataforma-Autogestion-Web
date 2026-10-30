@@ -114,7 +114,7 @@ function ToastItem({ item, onDismiss }) {
       </div>
 
       <div className="flex-1 pt-0.5">
-        {item.title && <p className={`text-xs font-bold uppercase tracking-wider ${current.title}`}>{item.title}</p>}
+        {item.title && <p className={`text-xs font-bold ${current.title}`}>{item.title}</p>}
         <p className="text-sm font-medium text-slate-800">{item.message}</p>
       </div>
 

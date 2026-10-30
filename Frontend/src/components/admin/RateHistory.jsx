@@ -24,7 +24,7 @@ export function RateHistory({ items }) {
 
       <div className="mt-3 max-h-72 overflow-auto">
         <table className="w-full min-w-[560px] text-left text-sm">
-          <thead className="sticky top-0 border-b border-slate-200 bg-white text-xs uppercase tracking-wide text-slate-500">
+          <thead className="sticky top-0 border-b border-slate-200 bg-white text-xs text-slate-500">
             <tr><th className="pb-2 font-medium">Fecha</th><th className="pb-2 font-medium">Concepto</th><th className="pb-2 font-medium">Valor</th><th className="pb-2 font-medium">Antes</th><th className="pb-2 font-medium">Lo cambió</th></tr>
           </thead>
           <tbody>

@@ -1,3 +1,5 @@
+import { AuthLayout } from '../components/layout/AuthLayout'
+import { Logo } from '../components/Logo'
 import { useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { resetPassword } from '../features/auth/authService'
@@ -41,12 +43,11 @@ export function ResetPasswordPage() {
   }
 
   return (
-    <main className="grid min-h-screen place-items-center bg-slate-100 p-6">
-      <section className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-8 shadow-sm sm:p-10">
-        <div className="mb-8 text-center">
-          <div className="mx-auto grid size-12 place-items-center rounded-xl bg-[#102848] text-xl font-black text-emerald-400">A</div>
-          <p className="mt-4 text-sm font-semibold uppercase tracking-wider text-emerald-600">Autogestión</p>
-          <h1 className="mt-2 text-2xl font-bold text-slate-900">Restablecer contraseña</h1>
+    <AuthLayout>
+      <section className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-8 sm:p-10">
+        <div className="mb-8 border-b border-slate-200 pb-6">
+          <Logo className="lg:hidden" markHeight={32} />
+          <h1 className="mt-6 text-2xl font-bold text-slate-900 lg:mt-0">Restablecer contraseña</h1>
           <p className="mt-2 text-sm text-slate-500">
             {email ? `Para la cuenta: ${email}` : 'Ingresá tu nueva clave para acceder.'}
           </p>
@@ -62,14 +63,14 @@ export function ResetPasswordPage() {
             </div>
             <Link
               to="/forgot-password"
-              className="inline-block w-full rounded-xl bg-emerald-600 px-4 py-3 text-center text-sm font-semibold text-white transition hover:bg-emerald-700"
+              className="inline-block w-full rounded-xl bg-primary-600 px-4 py-3 text-center text-sm font-semibold text-white transition hover:bg-primary-700"
             >
               Solicitar un nuevo enlace
             </Link>
           </div>
         ) : success ? (
           <div className="space-y-6 text-center">
-            <div className="rounded-xl bg-emerald-50 p-4 text-sm text-emerald-800">
+            <div className="rounded-xl bg-primary-50 p-4 text-sm text-primary-800">
               <p className="font-semibold">¡Contraseña actualizada!</p>
               <p className="mt-1">
                 Tu clave fue cambiada con éxito. Ya podés iniciar sesión con tus nuevas credenciales.
@@ -77,7 +78,7 @@ export function ResetPasswordPage() {
             </div>
             <Link
               to="/login"
-              className="inline-block w-full rounded-xl bg-emerald-600 px-4 py-3 text-center text-sm font-semibold text-white transition hover:bg-emerald-700"
+              className="inline-block w-full rounded-xl bg-primary-600 px-4 py-3 text-center text-sm font-semibold text-white transition hover:bg-primary-700"
             >
               Iniciar sesión
             </Link>
@@ -96,14 +97,14 @@ export function ResetPasswordPage() {
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
                   autoComplete="new-password"
-                  className="w-full rounded-xl border border-slate-300 px-3 py-2.5 pr-20 outline-none transition focus:border-emerald-600 focus:ring-2 focus:ring-emerald-100"
+                  className="w-full rounded-xl border border-slate-300 px-3 py-2.5 pr-20 outline-none transition focus:border-primary-600 focus:ring-2 focus:ring-primary-100"
                   placeholder="Mínimo 6 caracteres"
                   disabled={isSubmitting}
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword((prev) => !prev)}
-                  className="absolute inset-y-0 right-3 text-sm font-semibold text-emerald-700 hover:text-emerald-800 focus:outline-none"
+                  className="absolute inset-y-0 right-3 text-sm font-semibold text-primary-700 hover:text-primary-800 focus:outline-none"
                 >
                   {showPassword ? 'Ocultar' : 'Mostrar'}
                 </button>
@@ -121,7 +122,7 @@ export function ResetPasswordPage() {
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 autoComplete="new-password"
-                className="w-full rounded-xl border border-slate-300 px-3 py-2.5 outline-none transition focus:border-emerald-600 focus:ring-2 focus:ring-emerald-100"
+                className="w-full rounded-xl border border-slate-300 px-3 py-2.5 outline-none transition focus:border-primary-600 focus:ring-2 focus:ring-primary-100"
                 placeholder="Repetí la nueva contraseña"
                 disabled={isSubmitting}
               />
@@ -131,13 +132,13 @@ export function ResetPasswordPage() {
             <button
               type="submit"
               disabled={isSubmitting}
-              className="w-full rounded-xl bg-emerald-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-emerald-400"
+              className="w-full rounded-xl bg-primary-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-primary-700 disabled:cursor-not-allowed disabled:bg-primary-400"
             >
               {isSubmitting ? 'Guardando...' : 'Cambiar contraseña'}
             </button>
           </form>
         )}
       </section>
-    </main>
+    </AuthLayout>
   )
 }

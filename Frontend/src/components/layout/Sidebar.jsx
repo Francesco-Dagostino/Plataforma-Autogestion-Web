@@ -1,5 +1,7 @@
 import { Link, NavLink, useNavigate } from 'react-router-dom'
 import { clearSession } from '../../features/auth/authStorage'
+import { Logo } from '../Logo'
+import { ThemeToggle } from '../ThemeToggle'
 
 const employeeNavigation = [
   { label: 'Inicio', icon: 'home', path: '/inicio' },
@@ -22,6 +24,19 @@ function Icon({ name }) {
       <>
         <path d="M6 3h12v18l-3-2-3 2-3-2-3 2V3Z" />
         <path d="M9 8h6M9 12h6" />
+      </>
+    ),
+    user: (
+      <>
+        <circle cx="12" cy="8" r="3.5" />
+        <path d="M5 20c0-3.6 3-6 7-6s7 2.4 7 6" />
+      </>
+    ),
+    building: (
+      <>
+        <path d="M4 21V5a1 1 0 0 1 1-1h8a1 1 0 0 1 1 1v16" />
+        <path d="M14 10h5a1 1 0 0 1 1 1v10" />
+        <path d="M3 21h18M8 8h2M8 12h2M8 16h2" />
       </>
     ),
     chart: (
@@ -58,48 +73,50 @@ export function Sidebar({
   }
 
   return (
-    <aside className="flex w-full shrink-0 flex-row flex-wrap items-center gap-3 bg-[#102848] px-4 py-3 text-slate-300 lg:min-h-screen lg:w-60 lg:flex-col lg:items-stretch lg:px-5 lg:py-7">
-      <Link to={homePath} className="mr-auto flex items-center gap-3 lg:mb-12">
-        <div className="grid size-10 place-items-center rounded-xl bg-emerald-400 text-xl font-black text-[#102848]">
-          A
-        </div>
-
-        <div>
-          <p className="font-bold tracking-wide text-white">AUTOGESTIÓN</p>
-          <p className="text-xs text-slate-400">{subtitle}</p>
-        </div>
+    <aside className="flex w-full shrink-0 flex-row flex-wrap items-center gap-3 border-b border-slate-200 bg-white px-4 py-3 lg:min-h-screen lg:w-64 lg:flex-col lg:items-stretch lg:border-b-0 lg:border-r lg:px-5 lg:py-7">
+      <Link to={homePath} className="mr-auto flex flex-col gap-1.5 lg:mb-10">
+        <Logo markHeight={30} />
+        <span className="hidden text-xs text-slate-500 sm:block">{subtitle}</span>
       </Link>
 
-      <nav className="flex gap-2 lg:flex-col">
+      <nav className="flex gap-1 lg:flex-col">
         {navigation.map((item) => (
           <NavLink
             key={item.label}
             end={item.path === homePath}
             to={item.path}
             className={({ isActive }) =>
-              `flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition ${
+              `flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors ${
                 isActive
-                  ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-950/20'
-                  : 'hover:bg-white/10 hover:text-white'
+                  ? 'bg-primary-50 text-primary-700 dark:bg-slate-200 dark:text-slate-900!'
+                  : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
               }`
             }
           >
-            <span className="size-5">
-              <Icon name={item.icon} />
-            </span>
+            {({ isActive }) => (
+              <>
+                <span className="size-5">
+                  <Icon name={item.icon} />
+                </span>
 
-            <span className="hidden sm:inline">{item.label}</span>
+                <span className="hidden sm:inline">{item.label}</span>
+
+                {isActive && <span aria-hidden="true" className="ml-auto hidden size-2 rounded-full bg-brand-amber lg:block" />}
+              </>
+            )}
           </NavLink>
         ))}
       </nav>
 
       <div className="ml-auto flex items-center gap-2 lg:mt-auto lg:ml-0 lg:flex-col lg:items-stretch">
+        <ThemeToggle showLabel />
+
         <Link
           to="/perfil"
-          className="flex items-center gap-3 rounded-xl border border-white/10 px-3 py-2.5 text-sm font-medium transition hover:bg-white/10 hover:text-white"
+          className="flex items-center gap-3 rounded-xl border border-slate-200 px-3 py-2.5 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900"
         >
-          <span className="grid size-7 place-items-center rounded-full bg-slate-500 text-xs font-bold text-white">
-            MI
+          <span className="size-5">
+            <Icon name="user" />
           </span>
           <span className="hidden sm:inline">Mi perfil</span>
         </Link>
@@ -107,9 +124,9 @@ export function Sidebar({
         <button
           type="button"
           onClick={handleLogout}
-          className="rounded-xl border border-white/20 px-3 py-2.5 text-left text-sm font-medium text-slate-200 transition hover:border-red-300/50 hover:bg-red-400/10 hover:text-white focus:outline-none focus:ring-2 focus:ring-emerald-300"
+          className="rounded-xl border border-slate-200 px-3 py-2.5 text-left text-sm font-medium text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900"
         >
-          <span aria-hidden="true" className="mr-2">↪</span>Cerrar sesión
+          Cerrar sesión
         </button>
       </div>
     </aside>

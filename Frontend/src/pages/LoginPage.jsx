@@ -1,3 +1,5 @@
+import { AuthLayout } from '../components/layout/AuthLayout'
+import { Logo } from '../components/Logo'
 import { useEffect, useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { QRCodeSVG } from 'qrcode.react'
@@ -93,12 +95,12 @@ export function LoginPage() {
 
   if (mfa) {
     return (
-      <main className="grid min-h-screen place-items-center bg-slate-100 p-6">
-        <section className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-8 shadow-sm sm:p-10">
-          <div className="mb-6 text-center">
-            <div className="mx-auto grid size-12 place-items-center rounded-xl bg-[#102848] text-xl font-black text-emerald-400">A</div>
-            <p className="mt-4 text-sm font-semibold uppercase tracking-wider text-emerald-600">Verificación en dos pasos</p>
-            <h1 className="mt-2 text-2xl font-bold text-slate-900">
+      <AuthLayout>
+        <section className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-8 sm:p-10">
+          <div className="mb-8 border-b border-slate-200 pb-6">
+            <Logo className="lg:hidden" markHeight={32} />
+            <p className="mt-6 text-sm text-slate-500 lg:mt-0">Verificación en dos pasos</p>
+            <h1 className="mt-1 text-2xl font-bold text-slate-900">
               {mfa.mode === 'setup' ? 'Configurá tu autenticador' : 'Ingresá tu código'}
             </h1>
           </div>
@@ -122,10 +124,10 @@ export function LoginPage() {
           <form className="space-y-5" onSubmit={handleMfaSubmit} noValidate>
             <div>
               <label className="mb-1.5 block text-sm font-semibold text-slate-700" htmlFor="mfaCode">Código de 6 dígitos</label>
-              <input id="mfaCode" value={mfaCode} onChange={(event) => setMfaCode(event.target.value.replace(/\D/g, '').slice(0, 6))} inputMode="numeric" autoComplete="one-time-code" autoFocus className="w-full rounded-xl border border-slate-300 px-3 py-2.5 text-center text-lg tracking-[0.4em] outline-none transition focus:border-emerald-600 focus:ring-2 focus:ring-emerald-100" placeholder="000000" disabled={isSubmitting} />
+              <input id="mfaCode" value={mfaCode} onChange={(event) => setMfaCode(event.target.value.replace(/\D/g, '').slice(0, 6))} inputMode="numeric" autoComplete="one-time-code" autoFocus className="w-full rounded-xl border border-slate-300 px-3 py-2.5 text-center text-lg tracking-[0.4em] outline-none transition focus:border-primary-600 focus:ring-2 focus:ring-primary-100" placeholder="000000" disabled={isSubmitting} />
             </div>
 
-            <button type="submit" disabled={isSubmitting} className="w-full rounded-xl bg-emerald-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-emerald-400">
+            <button type="submit" disabled={isSubmitting} className="w-full rounded-xl bg-primary-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-primary-700 disabled:cursor-not-allowed disabled:bg-primary-400">
               {isSubmitting ? 'Verificando...' : mfa.mode === 'setup' ? 'Activar e ingresar' : 'Verificar'}
             </button>
             <button type="button" onClick={cancelMfa} disabled={isSubmitting} className="w-full text-sm font-semibold text-slate-500 hover:text-slate-700">
@@ -133,47 +135,46 @@ export function LoginPage() {
             </button>
           </form>
         </section>
-      </main>
+      </AuthLayout>
     )
   }
 
   return (
-    <main className="grid min-h-screen place-items-center bg-slate-100 p-6">
-      <section className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-8 shadow-sm sm:p-10">
-        <div className="mb-8 text-center">
-          <div className="mx-auto grid size-12 place-items-center rounded-xl bg-[#102848] text-xl font-black text-emerald-400">A</div>
-          <p className="mt-4 text-sm font-semibold uppercase tracking-wider text-emerald-600">Autogestión</p>
-          <h1 className="mt-2 text-2xl font-bold text-slate-900">Iniciar sesión</h1>
+    <AuthLayout>
+      <section className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-8 sm:p-10">
+        <div className="mb-8 border-b border-slate-200 pb-6">
+          <Logo className="lg:hidden" markHeight={32} />
+          <h1 className="mt-6 text-2xl font-bold text-slate-900 lg:mt-0">Iniciar sesión</h1>
           <p className="mt-2 text-sm text-slate-500">Ingresá con las credenciales de tu empresa.</p>
         </div>
 
         <form className="space-y-5" onSubmit={handleSubmit} noValidate>
           <div>
             <label className="mb-1.5 block text-sm font-semibold text-slate-700" htmlFor="userName">Usuario</label>
-            <input id="userName" name="userName" value={form.userName} onChange={handleChange} autoComplete="username" className="w-full rounded-xl border border-slate-300 px-3 py-2.5 outline-none transition focus:border-emerald-600 focus:ring-2 focus:ring-emerald-100" placeholder="Ej.: empleado" disabled={isSubmitting} />
+            <input id="userName" name="userName" value={form.userName} onChange={handleChange} autoComplete="username" className="w-full rounded-xl border border-slate-300 px-3 py-2.5 outline-none transition focus:border-primary-600 focus:ring-2 focus:ring-primary-100" placeholder="Ej.: empleado" disabled={isSubmitting} />
           </div>
 
           <div>
             <div className="mb-1.5 flex items-center justify-between">
               <label className="block text-sm font-semibold text-slate-700" htmlFor="password">Contraseña</label>
-              <Link to="/forgot-password" className="text-xs font-semibold text-emerald-700 hover:text-emerald-800 hover:underline">
+              <Link to="/forgot-password" className="text-xs font-semibold text-primary-700 hover:text-primary-800 hover:underline">
                 ¿Olvidaste tu contraseña?
               </Link>
             </div>
             <div className="relative">
-              <input id="password" name="password" type={showPassword ? 'text' : 'password'} value={form.password} onChange={handleChange} autoComplete="current-password" className="w-full rounded-xl border border-slate-300 px-3 py-2.5 pr-20 outline-none transition focus:border-emerald-600 focus:ring-2 focus:ring-emerald-100" placeholder="Tu contraseña" disabled={isSubmitting} />
-              <button type="button" onClick={() => setShowPassword((visible) => !visible)} aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'} aria-pressed={showPassword} className="absolute inset-y-0 right-3 text-sm font-semibold text-emerald-700 hover:text-emerald-800 focus:outline-none focus-visible:underline focus-visible:underline-offset-4">
+              <input id="password" name="password" type={showPassword ? 'text' : 'password'} value={form.password} onChange={handleChange} autoComplete="current-password" className="w-full rounded-xl border border-slate-300 px-3 py-2.5 pr-20 outline-none transition focus:border-primary-600 focus:ring-2 focus:ring-primary-100" placeholder="Tu contraseña" disabled={isSubmitting} />
+              <button type="button" onClick={() => setShowPassword((visible) => !visible)} aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'} aria-pressed={showPassword} className="absolute inset-y-0 right-3 text-sm font-semibold text-primary-700 hover:text-primary-800 focus:outline-none focus-visible:underline focus-visible:underline-offset-4">
                 {showPassword ? 'Ocultar' : 'Mostrar'}
               </button>
             </div>
           </div>
 
 
-          <button type="submit" disabled={isSubmitting} className="w-full rounded-xl bg-emerald-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-emerald-400">
+          <button type="submit" disabled={isSubmitting} className="w-full rounded-xl bg-primary-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-primary-700 disabled:cursor-not-allowed disabled:bg-primary-400">
             {isSubmitting ? 'Ingresando...' : 'Ingresar'}
           </button>
         </form>
       </section>
-    </main>
+    </AuthLayout>
   )
 }

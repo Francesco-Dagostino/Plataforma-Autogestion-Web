@@ -11,8 +11,8 @@ const percent = (value) => (value === null || value === undefined ? '—' : `${d
 
 function Kpi({ label, value, hint }) {
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-      <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">{label}</p>
+    <div className="rounded-2xl border border-slate-200 bg-white p-4">
+      <p className="text-xs font-semibold text-slate-500">{label}</p>
       <p className="mt-2 text-2xl font-bold text-slate-900">{value}</p>
       {hint && <p className="mt-1 text-xs text-slate-500">{hint}</p>}
     </div>
@@ -90,8 +90,8 @@ export function StatisticsPanel() {
               {months.map((name, index) => <option key={name} value={index + 1}>{name}</option>)}
             </select>
             <input aria-label="Año" type="number" min="2000" max="2100" value={period.year} disabled={loading} onChange={(event) => { const year = Number(event.target.value); if (year >= 2000 && year <= 2100) changePeriod({ ...period, year }) }} className="w-24 rounded-xl border border-slate-300 p-2 text-sm disabled:opacity-50" />
-            <button type="button" onClick={refresh} disabled={loading} className="rounded-xl border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 transition hover:border-emerald-600 hover:bg-emerald-50 hover:text-emerald-800 disabled:opacity-50">
-              <span aria-hidden="true" className="mr-2">↻</span>{loading ? 'Actualizando...' : 'Actualizar'}
+            <button type="button" onClick={refresh} disabled={loading} className="rounded-xl border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 transition hover:border-primary-600 hover:bg-primary-50 hover:text-primary-800 disabled:opacity-50">
+              {loading ? 'Actualizando...' : 'Actualizar'}
             </button>
           </div>
         </div>
@@ -119,7 +119,7 @@ export function StatisticsPanel() {
             <p className="text-sm text-slate-500">Ordenado por horas aprobadas. El costo usa solo las horas aprobadas.</p>
             <div className="mt-4 overflow-x-auto">
               <table className="w-full min-w-[820px] text-left text-sm">
-                <thead className="border-b border-slate-200 text-xs uppercase tracking-wide text-slate-500">
+                <thead className="border-b border-slate-200 text-xs text-slate-500">
                   <tr><th className="pb-3 font-medium">Empleado</th><th className="pb-3 font-medium">Aprobadas</th><th className="pb-3 font-medium">Pendientes</th><th className="pb-3 font-medium">Rechazadas</th><th className="pb-3 font-medium">Días</th><th className="pb-3 font-medium">Prom./día</th><th className="pb-3 font-medium">Aprobación</th><th className="pb-3 text-right font-medium">Costo</th><th className="pb-3 pl-4 font-medium">% del costo</th></tr>
                 </thead>
                 <tbody>
@@ -135,7 +135,7 @@ export function StatisticsPanel() {
                       <td className="py-3 text-right font-semibold">{money.format(employee.cost)}</td>
                       <td className="py-3 pl-4">
                         <div className="flex items-center gap-2">
-                          <div className="h-2 w-20 overflow-hidden rounded-full bg-slate-100"><div className="h-full rounded-full bg-emerald-500" style={{ width: `${Math.min(100, employee.costShare)}%` }} /></div>
+                          <div className="h-2 w-20 overflow-hidden rounded-full bg-slate-100"><div className="h-full rounded-full bg-primary-500" style={{ width: `${Math.min(100, employee.costShare)}%` }} /></div>
                           <span className="text-xs text-slate-500">{percent(employee.costShare)}</span>
                         </div>
                       </td>

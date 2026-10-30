@@ -60,7 +60,7 @@ export function HomePage() {
       <Sidebar />
       <div className="min-w-0 flex-1">
         <header className="border-b border-slate-200 bg-white px-5 py-4 sm:px-8">
-          <p className="text-xs font-semibold uppercase tracking-wider text-emerald-600">Mi panel</p>
+          
           <h1 className="mt-1 text-xl font-bold">¡Buen día, {user?.name?.split(' ')[0] ?? ''}!</h1>
         </header>
         <div className="mx-auto max-w-7xl p-5 sm:p-8">
@@ -69,7 +69,7 @@ export function HomePage() {
               <h2 className="text-2xl font-bold">Resumen</h2>
               <p className="mt-1 text-slate-500">Un vistazo a tus horas y jornadas.</p>
             </div>
-            <Link to="/mis-horas" className="rounded-xl bg-emerald-600 px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-700">+ Registrar horas</Link>
+            <Link to="/mis-horas" className="rounded-xl bg-primary-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-primary-700">+ Registrar horas</Link>
           </div>
 
           <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
@@ -100,7 +100,7 @@ export function HomePage() {
               <h3 className="font-bold">¿Querés revisar o cargar tus jornadas?</h3>
               <p className="mt-1 text-sm text-slate-500">En Mis horas encontrás la gráfica, el historial y el formulario de carga.</p>
             </div>
-            <Link to="/mis-horas" className="rounded-xl border border-emerald-700 px-4 py-2.5 text-sm font-semibold text-emerald-700 transition hover:bg-emerald-50">Ir a Mis horas</Link>
+            <Link to="/mis-horas" className="rounded-xl border border-primary-700 px-4 py-2.5 text-sm font-semibold text-primary-700 transition hover:bg-primary-50">Ir a Mis horas</Link>
           </Card>
         </div>
       </div>
