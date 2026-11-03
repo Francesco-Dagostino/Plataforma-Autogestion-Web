@@ -20,16 +20,17 @@ function Kpi({ label, value, hint }) {
 }
 
 function DailyChart({ daily }) {
-  const max = Math.max(1, ...daily.map((day) => day.approvedHours + day.pendingHours))
+  const max = Math.max(1, ...daily.map((day) => day.approvedHours + day.pendingHours + day.rejectedHours))
 
   return (
     <div className="mt-4 overflow-x-auto">
       <div className="flex h-44 min-w-max items-end gap-1.5 border-b border-slate-200 pb-1" role="img" aria-label="Horas por día del mes">
         {daily.map((day) => {
-          const total = day.approvedHours + day.pendingHours
+          const total = day.approvedHours + day.pendingHours + day.rejectedHours
           return (
-            <div key={day.date} className="flex h-full w-7 flex-col justify-end" title={`${day.date.slice(8)}/${day.date.slice(5, 7)}: ${decimal.format(day.approvedHours)} h aprobadas, ${decimal.format(day.pendingHours)} h pendientes`}>
+            <div key={day.date} className="flex h-full w-7 flex-col justify-end" title={`${day.date.slice(8)}/${day.date.slice(5, 7)}: ${decimal.format(day.approvedHours)} h aprobadas, ${decimal.format(day.pendingHours)} h pendientes, ${decimal.format(day.rejectedHours)} h rechazadas`}>
               <div className="flex w-full flex-col justify-end overflow-hidden rounded-t-md" style={{ height: `${(total / max) * 100}%`, minHeight: total > 0 ? '6px' : '2px' }}>
+                <div className="bg-red-500" style={{ flexGrow: day.rejectedHours }} />
                 <div className="bg-amber-400" style={{ flexGrow: day.pendingHours }} />
                 <div className="bg-emerald-500" style={{ flexGrow: day.approvedHours }} />
               </div>
@@ -86,7 +87,7 @@ export function StatisticsPanel() {
             <p className="mt-1 text-sm text-slate-500">Rendimiento y costo por empleado en el período elegido.</p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            <select aria-label="Mes" value={period.month} disabled={loading} onChange={(event) => changePeriod({ ...period, month: Number(event.target.value) })} className="rounded-xl border border-slate-300 p-2 text-sm disabled:opacity-50">
+            <select aria-label="Mes" value={period.month} disabled={loading} onChange={(event) => changePeriod({ ...period, month: Number(event.target.value) })} className="rounded-xl border border-slate-300 bg-white p-2 text-sm text-slate-900 disabled:opacity-50">
               {months.map((name, index) => <option key={name} value={index + 1}>{name}</option>)}
             </select>
             <input aria-label="Año" type="number" min="2000" max="2100" value={period.year} disabled={loading} onChange={(event) => { const year = Number(event.target.value); if (year >= 2000 && year <= 2100) changePeriod({ ...period, year }) }} className="w-24 rounded-xl border border-slate-300 p-2 text-sm disabled:opacity-50" />
@@ -110,7 +111,7 @@ export function StatisticsPanel() {
         <>
           <Card>
             <h3 className="text-lg font-bold">Horas por día</h3>
-            <p className="text-sm text-slate-500">Aprobadas <span className="mx-1 inline-block size-2.5 rounded-sm bg-emerald-500 align-middle" /> y pendientes <span className="mx-1 inline-block size-2.5 rounded-sm bg-amber-400 align-middle" /> de toda la empresa.</p>
+            <p className="text-sm text-slate-500">Aprobadas <span className="mx-1 inline-block size-2.5 rounded-sm bg-emerald-500 align-middle" />, pendientes <span className="mx-1 inline-block size-2.5 rounded-sm bg-amber-400 align-middle" /> y rechazadas <span className="mx-1 inline-block size-2.5 rounded-sm bg-red-500 align-middle" /> de toda la empresa.</p>
             {loading && !daily.length ? <p className="py-8 text-center text-sm text-slate-400">Cargando...</p> : <DailyChart daily={daily} />}
           </Card>
 

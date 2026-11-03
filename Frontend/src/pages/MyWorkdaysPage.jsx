@@ -35,14 +35,13 @@ function WorkdayChart({ workdays }) {
   const [period, setPeriod] = useState('week')
   const today = getWorkdayDate(getArgentinaToday())
   const { monday, sunday } = getWeekRange(today)
-  const weekly = Array.from({ length: 7 }, (_, index) => ({ label: weekDays[index], approved: 0, pending: 0 }))
+  const weekly = Array.from({ length: 7 }, (_, index) => ({ label: weekDays[index], approved: 0, pending: 0, rejected: 0 }))
 
   workdays.forEach((workday) => {
-    if (workday.estado !== 'Aprobada' && workday.estado !== 'Pendiente') return
     const date = getWorkdayDate(workday.dateEntry)
     if (date < monday || date >= sunday) return
     const index = (date.getUTCDay() + 6) % 7
-    const status = workday.estado === 'Aprobada' ? 'approved' : 'pending'
+    const status = workday.estado === 'Aprobada' ? 'approved' : workday.estado === 'Pendiente' ? 'pending' : 'rejected'
     weekly[index][status] += Number(workday.hoursWorked ?? 0)
   })
 
@@ -51,21 +50,22 @@ function WorkdayChart({ workdays }) {
     label: `${index * 7 + 1}–${Math.min((index + 1) * 7, daysInMonth)}`,
     approved: 0,
     pending: 0,
+    rejected: 0,
   }))
 
   workdays.forEach((workday) => {
-    if (workday.estado !== 'Aprobada' && workday.estado !== 'Pendiente') return
     const date = getWorkdayDate(workday.dateEntry)
     if (date.getUTCFullYear() !== today.getUTCFullYear() || date.getUTCMonth() !== today.getUTCMonth()) return
     const index = Math.floor((date.getUTCDate() - 1) / 7)
-    const status = workday.estado === 'Aprobada' ? 'approved' : 'pending'
+    const status = workday.estado === 'Aprobada' ? 'approved' : workday.estado === 'Pendiente' ? 'pending' : 'rejected'
     monthly[index][status] += Number(workday.hoursWorked ?? 0)
   })
 
   const data = period === 'week' ? weekly : monthly
   const approvedTotal = data.reduce((total, item) => total + item.approved, 0)
   const pendingTotal = data.reduce((total, item) => total + item.pending, 0)
-  const maxHours = Math.max(9, ...data.map((item) => item.approved + item.pending))
+  const rejectedTotal = data.reduce((total, item) => total + item.rejected, 0)
+  const maxHours = Math.max(9, ...data.map((item) => item.approved + item.pending + item.rejected))
 
   return (
     <Card>
@@ -82,13 +82,15 @@ function WorkdayChart({ workdays }) {
       <div className="mt-4 flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-500">
         <span className="flex items-center gap-1.5"><span className="size-2.5 rounded-sm bg-emerald-500" />Aprobadas: {approvedTotal} h</span>
         <span className="flex items-center gap-1.5"><span className="size-2.5 rounded-sm bg-amber-400" />Pendientes: {pendingTotal} h</span>
+        <span className="flex items-center gap-1.5"><span className="size-2.5 rounded-sm bg-red-500" />Rechazadas: {rejectedTotal} h</span>
       </div>
       <div className="mt-7 flex h-48 items-end justify-between gap-2 border-b border-slate-200 px-1 sm:gap-3">
         {data.map((item, index) => {
-          const hours = item.approved + item.pending
+          const hours = item.approved + item.pending + item.rejected
           return (
             <div key={`${period}-${index}`} className="flex h-full min-w-0 flex-1 flex-col justify-end gap-2 text-center">
-              <div className="flex w-full flex-col justify-end overflow-hidden rounded-t-md" style={{ height: `${(hours / maxHours) * 100}%`, minHeight: hours > 0 ? '12px' : '2px' }} title={`${item.approved} h aprobadas, ${item.pending} h pendientes`}>
+              <div className="flex w-full flex-col justify-end overflow-hidden rounded-t-md" style={{ height: `${(hours / maxHours) * 100}%`, minHeight: hours > 0 ? '12px' : '2px' }} title={`${item.approved} h aprobadas, ${item.pending} h pendientes, ${item.rejected} h rechazadas`}>
+                {item.rejected > 0 && <div className="w-full bg-red-500" style={{ height: `${(item.rejected / hours) * 100}%`, minHeight: '3px' }} />}
                 {item.pending > 0 && <div className="w-full bg-amber-400" style={{ height: `${(item.pending / hours) * 100}%`, minHeight: '3px' }} />}
                 {item.approved > 0 && <div className="w-full bg-emerald-500" style={{ height: `${(item.approved / hours) * 100}%`, minHeight: '3px' }} />}
               </div>
@@ -97,7 +99,7 @@ function WorkdayChart({ workdays }) {
           )
         })}
       </div>
-      <p className="mt-3 text-right text-sm font-semibold text-slate-700">Total del período: {approvedTotal + pendingTotal} h</p>
+      <p className="mt-3 text-right text-sm font-semibold text-slate-700">Total registrado: {approvedTotal + pendingTotal + rejectedTotal} h</p>
     </Card>
   )
 }
