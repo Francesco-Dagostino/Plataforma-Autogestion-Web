@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Sidebar } from '../components/layout/Sidebar'
 import { useToast } from '../context/ToastContext'
-import { createCompany, createCompanyAdmin, downloadCompanyLiquidationDetail, downloadCompanyLiquidationTxt, getCompanies, getCompanyHistory, getCompanySummary, getCompanyUsers, setCompanyActive, updateCompany } from '../features/companies/companyService'
+import { createCompany, createCompanyAdmin, getCompanies, getCompanySummary, setCompanyActive, setCompanyHistoryAccess, updateCompany } from '../features/companies/companyService'
 
 const todayAsInput = () => {
   const today = new Date()
@@ -19,11 +19,10 @@ export function SuperAdminPage() {
   const [loading, setLoading] = useState(true)
   const [busy, setBusy] = useState(false)
   const { toast } = useToast()
-  const [admins, setAdmins] = useState({})
   const [companyToToggle, setCompanyToToggle] = useState(null)
+  const [companyAccessToToggle, setCompanyAccessToToggle] = useState(null)
   const [companyHistory, setCompanyHistory] = useState(null)
   const [historyLoading, setHistoryLoading] = useState(false)
-  const [downloadingReport, setDownloadingReport] = useState(null)
   const [adminCompany, setAdminCompany] = useState(null)
   const [adminForm, setAdminForm] = useState(emptyAdmin)
   const [showAdminPassword, setShowAdminPassword] = useState(false)
@@ -36,8 +35,6 @@ export function SuperAdminPage() {
     try {
       const list = (await getCompanies()) ?? []
       setCompanies(list)
-      const usersByCompany = await Promise.all(list.map((company) => getCompanyUsers(company.id).catch(() => [])))
-      setAdmins(Object.fromEntries(list.map((company, index) => [company.id, (usersByCompany[index] ?? []).filter((user) => user.role === 'Admin').map((user) => user.name)])))
     } catch (loadError) {
       toast.error(loadError.message || 'No se pudieron cargar las empresas.')
     } finally {
@@ -115,7 +112,7 @@ export function SuperAdminPage() {
     setHistoryLoading(true)
     setCompanyHistory({ company })
     try {
-      setCompanyHistory(await getCompanyHistory(company.id))
+      setCompanyHistory(await getCompanySummary(company.id))
     } catch (historyError) {
       setCompanyHistory(null)
       toast.error(historyError.message || 'No se pudo consultar el historial de la empresa.')
@@ -156,28 +153,27 @@ export function SuperAdminPage() {
     }
   }
 
-  async function downloadLiquidationFile(companyId, liquidation, kind) {
-    const key = `${kind}-${liquidation.id}`
-    setDownloadingReport(key)
+  function requestHistoryAccessChange(company) {
+    setCompanyAccessToToggle(company)
+  }
+
+  async function confirmHistoryAccessChange() {
+    if (!companyAccessToToggle) return
+    const company = companyAccessToToggle
+    const enabled = !company.historyAccessEnabled
+    setBusy(true)
     try {
-      const file = kind === 'detail'
-        ? await downloadCompanyLiquidationDetail(companyId, liquidation.id)
-        : await downloadCompanyLiquidationTxt(companyId, liquidation.id)
-      const url = URL.createObjectURL(file)
-      const link = document.createElement('a')
-      link.href = url
-      link.download = kind === 'detail'
-        ? `liquidacion_${liquidation.id}_detalle.pdf`
-        : `liquidacion_${liquidation.id}_banco.txt`
-      document.body.appendChild(link)
-      link.click()
-      link.remove()
-      window.setTimeout(() => URL.revokeObjectURL(url), 1000)
-      toast.success(kind === 'detail' ? 'Detalle PDF descargado.' : 'Archivo TXT descargado.')
-    } catch (downloadError) {
-      toast.error(downloadError.message || 'No se pudo descargar el archivo de la liquidación.')
+      await setCompanyHistoryAccess(company.id, enabled)
+      toast.success(enabled ? 'El Admin podrá cerrar sesión e ingresar nuevamente en modo consulta.' : 'Se revocó el acceso de consulta del Admin.')
+      setCompanyAccessToToggle(null)
+      await loadCompanies()
+      if (companyHistory?.company?.id === company.id) {
+        setCompanyHistory(await getCompanySummary(company.id))
+      }
+    } catch (accessError) {
+      toast.error(accessError.message || 'No se pudo cambiar el permiso de consulta.')
     } finally {
-      setDownloadingReport(null)
+      setBusy(false)
     }
   }
 
@@ -195,11 +191,11 @@ export function SuperAdminPage() {
           <div className="border-b border-slate-100 px-5 py-4"><h2 className="font-bold">Empresas</h2><p className="text-sm text-slate-500">{companies.length} {companies.length === 1 ? 'empresa registrada' : 'empresas registradas'}</p></div>
           <div className="overflow-x-auto">
             <table className="w-full min-w-[900px] text-left text-sm">
-              <thead className="bg-slate-50 text-xs text-slate-500"><tr><th className="px-5 py-3 font-medium">Empresa</th><th className="px-5 py-3 font-medium">CUIT</th><th className="px-5 py-3 font-medium">Alta</th><th className="px-5 py-3 font-medium">Admin</th><th className="px-5 py-3 font-medium">Estado</th><th className="px-5 py-3 text-right font-medium">Acciones</th></tr></thead>
+              <thead className="bg-slate-50 text-xs text-slate-500"><tr><th className="px-5 py-3 font-medium">Empresa</th><th className="px-5 py-3 font-medium">CUIT</th><th className="px-5 py-3 font-medium">Alta</th><th className="px-5 py-3 font-medium">Acceso</th><th className="px-5 py-3 font-medium">Estado</th><th className="px-5 py-3 text-right font-medium">Acciones</th></tr></thead>
               <tbody>
                 {loading ? <tr><td colSpan={6} className="px-5 py-8 text-center text-slate-400">Cargando empresas...</td></tr>
                   : companies.length === 0 ? <tr><td colSpan={6} className="px-5 py-8 text-center text-slate-500">Todavía no hay empresas registradas.</td></tr>
-                    : companies.map((company) => <tr key={company.id} className="border-t border-slate-100"><td className="px-5 py-4 font-semibold">{company.name}</td><td className="px-5 py-4">{company.cuit}</td><td className="px-5 py-4">{formatDate(company.dateHigh)}</td><td className="px-5 py-4">{admins[company.id]?.length ? admins[company.id].join(", ") : <span className="text-slate-400">Sin Admin</span>}</td><td className="px-5 py-4"><span className={company.isActive ? 'rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700' : 'rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-600'}>{company.isActive ? 'Activa' : 'Desactivada'}</span></td><td className="px-5 py-4"><div className="flex justify-end gap-2"><button type="button" disabled={busy || historyLoading} onClick={() => openCompanyHistory(company)} className="rounded-lg border border-primary-200 px-3 py-2 text-xs font-semibold text-primary-700 hover:bg-primary-50 disabled:opacity-50">Consultar historial</button>{company.isActive && <button type="button" disabled={busy} onClick={() => setAdminCompany(company)} className="rounded-lg border border-primary-200 px-3 py-2 text-xs font-semibold text-primary-700 hover:bg-primary-50 disabled:opacity-50">Crear Admin</button>}<button type="button" disabled={busy} onClick={() => openEdit(company)} className="rounded-lg border border-slate-300 px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50">Editar</button><button type="button" disabled={busy || historyLoading} onClick={() => requestCompanyStateChange(company)} className={company.isActive ? 'rounded-lg border border-red-200 px-3 py-2 text-xs font-semibold text-red-700 hover:bg-red-50 disabled:opacity-50' : 'rounded-lg border border-emerald-200 px-3 py-2 text-xs font-semibold text-emerald-700 hover:bg-emerald-50 disabled:opacity-50'}>{historyLoading ? 'Consultando...' : company.isActive ? 'Desactivar' : 'Reactivar'}</button></div></td></tr>)}
+                    : companies.map((company) => <tr key={company.id} className="border-t border-slate-100"><td className="px-5 py-4 font-semibold">{company.name}</td><td className="px-5 py-4">{company.cuit}</td><td className="px-5 py-4">{formatDate(company.dateHigh)}</td><td className="px-5 py-4">{company.isActive ? 'Operación normal' : company.historyAccessEnabled ? 'Consulta habilitada' : 'Sin acceso'}</td><td className="px-5 py-4"><span className={company.isActive ? 'rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700' : 'rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-600'}>{company.isActive ? 'Activa' : 'Desactivada'}</span></td><td className="px-5 py-4"><div className="flex justify-end gap-2"><button type="button" disabled={busy || historyLoading} onClick={() => openCompanyHistory(company)} className="rounded-lg border border-primary-200 px-3 py-2 text-xs font-semibold text-primary-700 hover:bg-primary-50 disabled:opacity-50">Ver resumen</button>{company.isActive ? <button type="button" disabled={busy} onClick={() => setAdminCompany(company)} className="rounded-lg border border-primary-200 px-3 py-2 text-xs font-semibold text-primary-700 hover:bg-primary-50 disabled:opacity-50">Crear Admin</button> : <button type="button" disabled={busy} onClick={() => requestHistoryAccessChange(company)} className="rounded-lg border border-amber-300 px-3 py-2 text-xs font-semibold text-amber-800 hover:bg-amber-50 disabled:opacity-50">{company.historyAccessEnabled ? 'Revocar consulta' : 'Permitir consulta'}</button>}<button type="button" disabled={busy} onClick={() => openEdit(company)} className="rounded-lg border border-slate-300 px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50">Editar</button><button type="button" disabled={busy || historyLoading} onClick={() => requestCompanyStateChange(company)} className={company.isActive ? 'rounded-lg border border-red-200 px-3 py-2 text-xs font-semibold text-red-700 hover:bg-red-50 disabled:opacity-50' : 'rounded-lg border border-emerald-200 px-3 py-2 text-xs font-semibold text-emerald-700 hover:bg-emerald-50 disabled:opacity-50'}>{historyLoading ? 'Consultando...' : company.isActive ? 'Desactivar' : 'Reactivar'}</button></div></td></tr>)}
               </tbody>
             </table>
           </div>
@@ -250,17 +246,39 @@ export function SuperAdminPage() {
           </section>
         </div>
       )}
+      {companyAccessToToggle && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4">
+          <section role="alertdialog" aria-modal="true" aria-labelledby="company-history-access-title" aria-describedby="company-history-access-description" className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-xl">
+            <div className="flex items-start gap-4">
+              <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full ${companyAccessToToggle.historyAccessEnabled ? 'bg-red-50 text-red-600' : 'bg-amber-50 text-amber-700'}`} aria-hidden="true">{companyAccessToToggle.historyAccessEnabled ? '−' : '✓'}</div>
+              <div>
+                <h2 id="company-history-access-title" className="text-lg font-bold">{companyAccessToToggle.historyAccessEnabled ? 'Revocar acceso de consulta' : 'Habilitar consulta del historial'}</h2>
+                <p className="mt-1 text-sm text-slate-500">{companyAccessToToggle.name}</p>
+              </div>
+            </div>
+            <p id="company-history-access-description" className="mt-4 text-sm leading-6 text-slate-600">
+              {companyAccessToToggle.historyAccessEnabled
+                ? 'El Admin dejará de poder ingresar al modo de consulta histórica. La empresa seguirá desactivada y sus datos se conservarán.'
+                : 'El Admin podrá volver a ingresar para consultar y descargar jornadas, liquidaciones y otros registros anteriores. El acceso será de solo lectura: no podrá cargar, editar, aprobar ni cerrar operaciones. La empresa seguirá desactivada.'}
+            </p>
+            <p className={`mt-4 rounded-xl border p-3 text-sm ${companyAccessToToggle.historyAccessEnabled ? 'border-red-100 bg-red-50 text-red-800' : 'border-amber-100 bg-amber-50 text-amber-900'}`}>
+              {companyAccessToToggle.historyAccessEnabled
+                ? 'El cambio se aplicará cuando el Admin vuelva a iniciar sesión.'
+                : 'El Admin deberá cerrar sesión y volver a ingresar para acceder a la consulta.'}
+            </p>
+            <div className="mt-6 flex justify-end gap-3">
+              <button type="button" disabled={busy} onClick={() => setCompanyAccessToToggle(null)} className="rounded-xl px-4 py-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-100">Cancelar</button>
+              <button type="button" disabled={busy} onClick={confirmHistoryAccessChange} className={`rounded-xl px-5 py-2.5 text-sm font-semibold text-white disabled:opacity-50 ${companyAccessToToggle.historyAccessEnabled ? 'bg-red-600 hover:bg-red-700' : 'bg-amber-600 hover:bg-amber-700'}`}>{busy ? 'Guardando...' : companyAccessToToggle.historyAccessEnabled ? 'Revocar acceso' : 'Permitir consulta'}</button>
+            </div>
+          </section>
+        </div>
+      )}
       {companyHistory && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-3 sm:p-6">
           <section role="dialog" aria-modal="true" aria-labelledby="company-history-title" className="max-h-[92vh] w-full max-w-5xl overflow-y-auto rounded-2xl bg-white p-5 shadow-xl sm:p-7">
-            <div className="flex items-start justify-between gap-4"><div><h2 id="company-history-title" className="text-xl font-bold">Historial de {companyHistory.company?.name}</h2><p className="mt-1 text-sm text-slate-500">Consulta de datos históricos, incluidos períodos anteriores.</p></div><button type="button" onClick={() => setCompanyHistory(null)} className="rounded-lg px-3 py-1 text-slate-500 hover:bg-slate-100" aria-label="Cerrar">✕</button></div>
-            {historyLoading ? <p className="py-12 text-center text-slate-500">Cargando historial...</p> : <div className="mt-5 space-y-6">
+            <div className="flex items-start justify-between gap-4"><div><h2 id="company-history-title" className="text-xl font-bold">Resumen de {companyHistory.company?.name}</h2><p className="mt-1 text-sm text-slate-500">Vista general de actividad; el detalle de jornadas y liquidaciones queda reservado al Admin autorizado.</p></div><button type="button" onClick={() => setCompanyHistory(null)} className="rounded-lg px-3 py-1 text-slate-500 hover:bg-slate-100" aria-label="Cerrar">✕</button></div>
+            {historyLoading ? <p className="py-12 text-center text-slate-500">Cargando resumen...</p> : <div className="mt-5 space-y-6">
               <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-6">{[['Empleados', companyHistory.counts?.employees], ['Usuarios', companyHistory.counts?.users], ['Jornadas', companyHistory.counts?.workdays], ['Liquidaciones', companyHistory.counts?.liquidations], ['Detalles', companyHistory.counts?.liquidationDetails], ['Gestiones', companyHistory.counts?.notifications]].map(([label, count]) => <div key={label} className="rounded-xl bg-slate-50 p-3"><p className="text-xs text-slate-500">{label}</p><p className="mt-1 text-xl font-bold">{count ?? 0}</p></div>)}</div>
-              <section><h3 className="mb-2 font-semibold">Empleados y usuarios</h3><div className="overflow-x-auto rounded-xl border border-slate-200"><table className="w-full text-left text-sm"><thead className="bg-slate-50 text-xs text-slate-500"><tr><th className="p-3">Nombre</th><th className="p-3">Usuario</th><th className="p-3">Rol</th><th className="p-3">Estado</th></tr></thead><tbody>{(companyHistory.users ?? []).map((user) => <tr key={user.id} className="border-t"><td className="p-3">{user.name}</td><td className="p-3">{user.userName}</td><td className="p-3">{user.role}</td><td className="p-3">{user.isActive ? 'Activo' : 'Baja'}</td></tr>)}{!companyHistory.users?.length && <tr><td colSpan={4} className="p-3 text-slate-500">Sin usuarios asociados.</td></tr>}</tbody></table></div></section>
-              <section><h3 className="mb-2 font-semibold">Jornadas registradas</h3><div className="max-h-56 overflow-auto rounded-xl border border-slate-200"><table className="w-full text-left text-sm"><thead className="sticky top-0 bg-slate-50 text-xs text-slate-500"><tr><th className="p-3">Fecha</th><th className="p-3">Empleado</th><th className="p-3">Horas</th><th className="p-3">Estado</th></tr></thead><tbody>{(companyHistory.workdays ?? []).map((day) => <tr key={day.id} className="border-t"><td className="p-3">{formatDate(day.dateEntry)}</td><td className="p-3">{day.employee}</td><td className="p-3">{day.hoursWorked}</td><td className="p-3">{day.state}</td></tr>)}{!companyHistory.workdays?.length && <tr><td colSpan={4} className="p-3 text-slate-500">Sin jornadas registradas.</td></tr>}</tbody></table></div></section>
-              <section><h3 className="mb-2 font-semibold">Liquidaciones anteriores y actuales</h3><div className="max-h-56 overflow-auto rounded-xl border border-slate-200"><table className="w-full min-w-[740px] text-left text-sm"><thead className="sticky top-0 bg-slate-50 text-xs text-slate-500"><tr><th className="p-3">Período</th><th className="p-3">Cierre</th><th className="p-3">Total</th><th className="p-3">Estado</th><th className="p-3">Archivos</th></tr></thead><tbody>{(companyHistory.liquidations ?? []).map((liquidation) => { const hasDetails = companyHistory.details?.some((detail) => detail.idLiquidation === liquidation.id); return <tr key={liquidation.id} className="border-t"><td className="p-3">{formatDate(liquidation.liquidationDate)}</td><td className="p-3">{formatDate(liquidation.executionDate)}</td><td className="p-3">{Number(liquidation.total).toLocaleString('es-AR', { style: 'currency', currency: 'ARS' })}</td><td className="p-3">{liquidation.isClosed ? 'Cerrada' : 'Simulada'}</td><td className="p-3"><div className="flex flex-wrap gap-2"><button type="button" onClick={() => downloadLiquidationFile(companyHistory.company?.id, liquidation, 'detail')} disabled={!hasDetails || downloadingReport !== null} className="rounded-lg border border-primary-200 px-3 py-1.5 text-xs font-semibold text-primary-700 hover:bg-primary-50 disabled:opacity-50">{downloadingReport === `detail-${liquidation.id}` ? 'Descargando…' : 'Detalle PDF'}</button><button type="button" onClick={() => downloadLiquidationFile(companyHistory.company?.id, liquidation, 'txt')} disabled={!hasDetails || downloadingReport !== null} className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50">{downloadingReport === `txt-${liquidation.id}` ? 'Descargando…' : 'Lote TXT'}</button></div></td></tr>})}{!companyHistory.liquidations?.length && <tr><td colSpan={5} className="p-3 text-slate-500">Sin liquidaciones registradas.</td></tr>}</tbody></table></div></section>
-              <section><h3 className="mb-2 font-semibold">Detalle de liquidaciones por empleado</h3><div className="max-h-56 overflow-auto rounded-xl border border-slate-200"><table className="w-full text-left text-sm"><thead className="sticky top-0 bg-slate-50 text-xs text-slate-500"><tr><th className="p-3">Período</th><th className="p-3">Empleado</th><th className="p-3">Horas</th><th className="p-3">Importe</th></tr></thead><tbody>{(companyHistory.details ?? []).map((detail) => <tr key={detail.id} className="border-t"><td className="p-3">{formatDate(detail.period)}</td><td className="p-3">{detail.employee}</td><td className="p-3">{detail.totalHours}</td><td className="p-3">{Number(detail.amount).toLocaleString('es-AR', { style: 'currency', currency: 'ARS' })}</td></tr>)}{!companyHistory.details?.length && <tr><td colSpan={4} className="p-3 text-slate-500">Sin detalles de liquidación.</td></tr>}</tbody></table></div></section>
-              <section><h3 className="mb-2 font-semibold">Historial de gestiones y valores</h3><div className="max-h-56 space-y-2 overflow-auto">{(companyHistory.notifications ?? []).map((item) => <article key={item.id} className="rounded-xl border border-slate-200 p-3 text-sm"><p className="font-medium">{item.type}: {item.message}</p><p className="mt-1 text-xs text-slate-500">{formatDate(item.createdAt)} · {item.isRead ? 'Leída' : 'Pendiente'}</p></article>)}{(companyHistory.rateHistory ?? []).map((item) => <article key={`rate-${item.id}`} className="rounded-xl border border-slate-200 p-3 text-sm"><p className="font-medium">Cambio de valor {item.rateType}: {item.previousValue ?? '—'} → {item.value ?? '—'}</p><p className="mt-1 text-xs text-slate-500">{formatDate(item.changedAt)} · {item.userName ?? 'Sistema'}</p></article>)}{!companyHistory.notifications?.length && !companyHistory.rateHistory?.length && <p className="text-sm text-slate-500">Sin gestiones o cambios de valores registrados.</p>}</div></section>
             </div>}
             <div className="mt-6 flex justify-end"><button type="button" onClick={() => setCompanyHistory(null)} className="rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-semibold text-slate-700">Cerrar</button></div>
           </section>

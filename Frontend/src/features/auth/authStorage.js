@@ -32,12 +32,18 @@ export function getUserRole(token = getToken()) {
   return payload?.[ROLE_CLAIM] ?? payload?.role ?? null
 }
 
+export function isHistoryOnlyAdmin(token = getToken()) {
+  const payload = getTokenPayload(token)
+  return payload?.HistoryOnly === 'true'
+}
+
 export function hasValidSession() {
   const payload = getTokenPayload()
   return Boolean(payload?.exp && payload.exp * 1000 > Date.now())
 }
 
 export function getHomePathForRole(role = getUserRole()) {
+  if (role === 'Admin' && isHistoryOnlyAdmin()) return '/admin/historial'
   const paths = {
     Empleado: '/inicio',
     Admin: '/admin',

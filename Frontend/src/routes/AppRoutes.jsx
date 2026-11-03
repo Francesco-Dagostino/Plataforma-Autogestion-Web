@@ -11,6 +11,7 @@ import { MyLiquidationsPage } from '../pages/MyLiquidationsPage'
 
 import { ForgotPasswordPage } from '../pages/ForgotPasswordPage'
 import { ResetPasswordPage } from '../pages/ResetPasswordPage'
+import { AdminHistoryOnlyPage } from '../pages/AdminHistoryOnlyPage'
 
 export function AppRoutes() {
   return (
@@ -26,6 +27,7 @@ export function AppRoutes() {
       <Route path="/admin/liquidaciones" element={<ProtectedRoute allowedRoles={['Admin']}><AdminDashboardPage section="liquidaciones" /></ProtectedRoute>} />
       <Route path="/admin/estadisticas" element={<ProtectedRoute allowedRoles={['Admin']}><AdminDashboardPage section="estadisticas" /></ProtectedRoute>} />
       <Route path="/admin/mi-empresa" element={<ProtectedRoute allowedRoles={['Admin']}><AdminDashboardPage section="miEmpresa" /></ProtectedRoute>} />
+      <Route path="/admin/historial" element={<ProtectedRoute allowedRoles={['Admin']}><AdminHistoryOnlyPage /></ProtectedRoute>} />
       <Route path="/super-admin" element={<ProtectedRoute allowedRoles={['SuperAdmin']}><SuperAdminPage /></ProtectedRoute>} />
       <Route path="/" element={<Navigate to="/inicio" replace />} />
       <Route path="*" element={<Navigate to="/inicio" replace />} />

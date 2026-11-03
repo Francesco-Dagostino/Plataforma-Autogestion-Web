@@ -20,6 +20,10 @@ export function setCompanyActive(id, isActive) {
   return apiClient(`/Company/${id}/estado`, { method: 'PUT', body: JSON.stringify({ isActive }) })
 }
 
+export function setCompanyHistoryAccess(id, enabled) {
+  return apiClient(`/Company/${id}/acceso-historial`, { method: 'PUT', body: JSON.stringify({ enabled }) })
+}
+
 export function getCompanyHistory(id) {
   return apiClient(`/Company/${id}/historial`)
 }
@@ -28,18 +32,10 @@ export function getCompanySummary(id) {
   return apiClient(`/Company/${id}/resumen`)
 }
 
-export function downloadCompanyLiquidationDetail(companyId, liquidationId) {
-  return apiClient(`/reports/superadmin/${companyId}/recibos/${liquidationId}`, { responseType: 'blob' })
-}
-
-export function downloadCompanyLiquidationTxt(companyId, liquidationId) {
-  return apiClient(`/reports/superadmin/${companyId}/banco/${liquidationId}`, { responseType: 'blob' })
+export function getAdminHistoricalConsultation() {
+  return apiClient('/Company/consulta-historial')
 }
 
 export function createCompanyAdmin(companyId, admin) {
   return apiClient('/User', { method: 'POST', body: JSON.stringify({ ...admin, role: 'Admin', idCompany: companyId }) })
-}
-
-export function getCompanyUsers(companyId) {
-  return apiClient(`/User/company/${companyId}`)
 }
